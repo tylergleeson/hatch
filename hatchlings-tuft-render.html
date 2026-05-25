@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hatchlings — Tuft, the Cave Moth · Series 01 / Deep Thaw</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:        #0d0b09;
+    --bg-2:      #15110c;
+    --ink:       #e9e1d3;
+    --ink-dim:   #8c8170;
+    --ink-faint: #5b5345;
+    --amber:     #d4a24c;
+    --line:      rgba(212,162,76,0.22);
+    --line-soft: rgba(233,225,211,0.08);
+    --ease:      cubic-bezier(.65,.02,.25,1);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* Warm radial vignette behind everything */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 32% 24%, rgba(212,162,76,0.10) 0%, rgba(212,162,76,0.03) 28%, transparent 58%),
+      radial-gradient(140% 120% at 50% 42%, var(--bg-2) 0%, var(--bg) 62%);
+    z-index: 0;
+  }
+  /* Subtle film grain over the whole page */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.045;
+    z-index: 5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: clamp(14px, 2.4vw, 30px) clamp(16px, 3vw, 48px);
+  }
+
+  /* ---------- Masthead ---------- */
+  header.masthead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--line-soft);
+    padding-bottom: 14px;
+  }
+  .wordmark {
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: clamp(18px, 2.1vw, 26px);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .wordmark .dot { color: var(--amber); }
+  .series {
+    font-size: 11px;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  /* ---------- Stage ---------- */
+  .stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+  }
+  .stage svg {
+    width: min(86vh, 92vw, 760px);
+    height: auto;
+    max-height: 100%;
+    overflow: visible;
+  }
+
+  /* Floating editorial caption (top-left of stage) */
+  .placard {
+    position: absolute;
+    top: clamp(6px, 1.5vh, 22px);
+    left: clamp(0px, 1vw, 18px);
+    max-width: 290px;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .placard .idx {
+    font-family: "Fraunces", serif;
+    font-size: 12px;
+    letter-spacing: 0.32em;
+    color: var(--amber);
+    text-transform: uppercase;
+  }
+  .placard h2 {
+    font-family: "Fraunces", serif;
+    font-weight: 400;
+    font-size: clamp(26px, 3.4vw, 40px);
+    margin: 4px 0 8px;
+    line-height: 1.02;
+    letter-spacing: 0.005em;
+  }
+  .placard p {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-dim);
+    font-weight: 300;
+    margin: 0;
+    max-width: 270px;
+  }
+  .placard .idx, .placard h2, .placard p {
+    transition: opacity .6s var(--ease), transform .6s var(--ease);
+  }
+  .placard.swap .idx, .placard.swap h2, .placard.swap p {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  /* Warmth read-out (auto-play, sealed phase) */
+  .warmth {
+    position: absolute;
+    bottom: clamp(4px, 1.5vh, 18px);
+    right: clamp(0px, 1vw, 18px);
+    text-align: right;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .5s ease;
+  }
+  .warmth.show { opacity: 1; }
+  .warmth .lbl {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .warmth .val {
+    font-family: "Fraunces", serif;
+    font-size: 30px;
+    color: var(--amber);
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .warmth .track {
+    width: 120px;
+    height: 2px;
+    margin: 10px 0 0 auto;
+    background: var(--line-soft);
+    overflow: hidden;
+  }
+  .warmth .track > i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--amber);
+    box-shadow: 0 0 8px rgba(212,162,76,0.7);
+  }
+
+  /* ---------- Controls ---------- */
+  footer.controls {
+    border-top: 1px solid var(--line-soft);
+    padding-top: 16px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: clamp(16px, 3vw, 40px);
+  }
+  .steps {
+    display: flex;
+    gap: clamp(6px, 1.4vw, 18px);
+    flex-wrap: wrap;
+  }
+  .step {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--ink-faint);
+    cursor: pointer;
+    padding: 8px 2px 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    position: relative;
+    transition: color .35s ease;
+  }
+  .step:hover { color: var(--ink-dim); }
+  .step .num {
+    font-family: "Fraunces", serif;
+    font-size: 12px;
+    color: var(--amber);
+    opacity: .5;
+    transition: opacity .35s ease;
+    min-width: 14px;
+  }
+  .step .name {
+    font-size: 12px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .step::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: var(--amber);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform .45s var(--ease);
+  }
+  .step.active { color: var(--ink); }
+  .step.active .num { opacity: 1; }
+  .step.active::after { transform: scaleX(1); }
+
+  .transport {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: clamp(160px, 22vw, 280px);
+  }
+  .play {
+    appearance: none;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: rgba(212,162,76,0.05);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 9px 18px 9px 14px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background .35s ease, border-color .35s ease;
+  }
+  .play:hover { background: rgba(212,162,76,0.12); border-color: rgba(212,162,76,0.45); }
+  .play .ico {
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 5px 0 5px 8px;
+    border-color: transparent transparent transparent var(--amber);
+    transition: .2s ease;
+  }
+  .play.playing .ico {
+    width: 8px; height: 9px;
+    border: 0;
+    border-left: 3px solid var(--amber);
+    border-right: 3px solid var(--amber);
+    background: transparent;
+  }
+  .progress {
+    flex: 1;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .progress .rail {
+    position: relative;
+    width: 100%;
+    height: 1px;
+    background: var(--line-soft);
+  }
+  .progress .rail > i {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    background: var(--amber);
+    box-shadow: 0 0 8px rgba(212,162,76,0.6);
+  }
+  /* phase ticks */
+  .progress .tick {
+    position: absolute;
+    top: -3px;
+    width: 1px;
+    height: 7px;
+    background: var(--line-soft);
+    transform: translateX(-0.5px);
+  }
+
+  /* ---------- SVG state-driven styles ---------- */
+  #scene * { transform-box: fill-box; }
+
+  .lyr {
+    transition:
+      opacity 1.1s var(--ease),
+      transform 1.5s var(--ease);
+  }
+  /* default-hidden layers */
+  #innerGlow, #silhouette, #cracks, #shardL, #shardR,
+  #creature, #base, #nameplate, #warmPool { opacity: 0; }
+
+  /* group pivots */
+  #shardL, #shardR, #creature, #base, #nameplate {
+    transform-origin: center;
+  }
+
+  /* === SEALED === */
+  #scene.is-sealed #shell        { opacity: 1; }
+  #scene.is-sealed #warmPool     { opacity: var(--warmth-glow, 0); }
+  #scene.is-sealed #innerGlow    { opacity: calc(var(--warmth-glow, 0) * 0.45); }
+
+  /* === TRIGGERED === */
+  #scene.is-triggered #shell       { opacity: .42; }
+  #scene.is-triggered #shellMilky  { opacity: .55; }
+  #scene.is-triggered #innerGlow   { opacity: 1; }
+  #scene.is-triggered #silhouette  { opacity: .92; }
+  #scene.is-triggered #cracks      { opacity: 1; }
+  #scene.is-triggered #warmPool    { opacity: .55; }
+
+  /* === HATCHED === */
+  #scene.is-hatched #shell    { opacity: 0; }
+  #scene.is-hatched #shardL   { opacity: 1; transform: translate(-118px, 64px) rotate(-23deg) scale(.93); }
+  #scene.is-hatched #shardR   { opacity: 1; transform: translate(118px, 64px) rotate(23deg) scale(.93); }
+  #scene.is-hatched #creature { opacity: 1; transform: translate(0,0) scale(1); }
+
+  /* === DISPLAYED === */
+  #scene.is-displayed #shell      { opacity: 0; }
+  #scene.is-displayed #shadow     { opacity: 0; }
+  #scene.is-displayed #base       { opacity: 1; transform: translateY(0) scale(1); }
+  #scene.is-displayed #nameplate  { opacity: 1; }
+  #scene.is-displayed #shardL     { opacity: 1; transform: translate(-138px, 92px) rotate(-15deg) scale(.6); }
+  #scene.is-displayed #shardR     { opacity: 1; transform: translate(138px, 92px) rotate(15deg) scale(.6); }
+  #scene.is-displayed #creature   { opacity: 1; transform: translate(0, 22px) scale(.88); }
+
+  /* shards begin life collapsed at egg-center & invisible (so hatch reads as a split) */
+  #shardL, #shardR { transform: translate(0,0) rotate(0) scale(1); }
+
+  /* crack draw-on */
+  #cracks path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 1.2s var(--ease);
+  }
+  #scene.is-triggered #cracks path { stroke-dashoffset: 0; }
+  #scene.is-triggered #cracks path:nth-child(1){ transition-delay:.05s }
+  #scene.is-triggered #cracks path:nth-child(2){ transition-delay:.30s }
+  #scene.is-triggered #cracks path:nth-child(3){ transition-delay:.55s }
+  #scene.is-triggered #cracks path:nth-child(4){ transition-delay:.80s }
+  #scene.is-triggered #cracks path:nth-child(5){ transition-delay:1.05s }
+
+  /* ---- idle life ---- */
+  @keyframes bob   { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-7px) } }
+  @keyframes bobsh { 0%,100%{ transform: scale(1) } 50%{ transform: scale(.94) } }
+  @keyframes breathe { 0%,100%{ transform: scaleY(1) translateY(0) } 50%{ transform: scaleY(1.025) translateY(-3px) } }
+  @keyframes flutterL { 0%,100%{ transform: rotate(0deg) } 50%{ transform: rotate(-4.5deg) } }
+  @keyframes flutterR { 0%,100%{ transform: rotate(0deg) } 50%{ transform: rotate(4.5deg) } }
+  @keyframes swayL { 0%,100%{ transform: rotate(0deg) } 50%{ transform: rotate(-3deg) } }
+  @keyframes swayR { 0%,100%{ transform: rotate(0deg) } 50%{ transform: rotate(3deg) } }
+  @keyframes shimmer { 0%{ opacity:.5 } 50%{ opacity:1 } 100%{ opacity:.5 } }
+
+  #eggFloat { animation: bob 6.5s ease-in-out infinite; }
+  #shadow   { animation: bobsh 6.5s ease-in-out infinite; transition: opacity 1.1s var(--ease); }
+  /* rest the egg/shell once it is hatched or seated on the base */
+  #scene.is-hatched   #eggFloat,
+  #scene.is-displayed #eggFloat,
+  #scene.is-hatched   #shadow,
+  #scene.is-displayed #shadow { animation: none; }
+
+  #bodyCore   { animation: breathe 4.4s ease-in-out infinite; transform-origin: center bottom; }
+  /* pivots expressed as fill-box percentages (origin = element's own bbox) */
+  #wingLpiv   { transform-origin: 95% 56%; }
+  #wingRpiv   { transform-origin: 5% 56%; }
+  #antLpiv    { transform-origin: 100% 100%; }
+  #antRpiv    { transform-origin: 0% 100%; }
+  /* animate wings/antennae only once revealed */
+  #scene.is-hatched   #wingLpiv,
+  #scene.is-displayed #wingLpiv { animation: flutterL 3.8s ease-in-out infinite; }
+  #scene.is-hatched   #wingRpiv,
+  #scene.is-displayed #wingRpiv { animation: flutterR 3.8s ease-in-out infinite; }
+  #scene.is-hatched   #antLpiv,
+  #scene.is-displayed #antLpiv  { animation: swayL 5.2s ease-in-out infinite; }
+  #scene.is-hatched   #antRpiv,
+  #scene.is-displayed #antRpiv  { animation: swayR 5.2s ease-in-out infinite; }
+
+  #scene.is-triggered #eyeSpots { animation: shimmer 2.4s ease-in-out infinite; }
+
+  /* heat-haze only visible while triggered */
+  #haze { opacity: 0; transition: opacity 1s ease; }
+  #scene.is-triggered #haze { opacity: 1; }
+
+  .hint {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    z-index: 3;
+    pointer-events: none;
+  }
+  @media (max-width: 720px){
+    .placard { position: static; max-width: none; margin-bottom: 4px; }
+    .warmth { display:none; }
+    footer.controls { grid-template-columns: 1fr; gap: 14px; }
+    .transport { min-width: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <div class="wordmark">Hatchlings<span class="dot"> · </span></div>
+    <div class="series">Series 01 — Deep Thaw &nbsp;/&nbsp; Common Tier</div>
+  </header>
+
+  <main class="stage">
+    <div class="placard" id="placard">
+      <div class="idx" id="pl-idx">State 01 / 04</div>
+      <h2 id="pl-title">Sealed</h2>
+      <p id="pl-body">A dormant egg of porous volcanic stone, just out of the box. Cradle it in warm hands to wake what sleeps inside.</p>
+    </div>
+
+    <div class="warmth" id="warmth">
+      <div class="lbl">Warming</div>
+      <div class="val" id="warmth-val">0%</div>
+      <div class="track"><i id="warmth-bar"></i></div>
+    </div>
+
+    <!-- =================== THE RENDER =================== -->
+    <svg id="svg" viewBox="0 0 900 760" role="img" aria-label="Tuft the cave moth product rendering">
+      <defs>
+        <!-- ===== gradients: egg / stone ===== -->
+        <radialGradient id="gStone" cx="38%" cy="30%" r="80%">
+          <stop offset="0%"  stop-color="#5c5443"/>
+          <stop offset="34%" stop-color="#46402f"/>
+          <stop offset="72%" stop-color="#3a342a"/>
+          <stop offset="100%" stop-color="#241f18"/>
+        </radialGradient>
+        <radialGradient id="gStoneInner" cx="40%" cy="42%" r="70%">
+          <stop offset="0%" stop-color="#6a6150"/>
+          <stop offset="60%" stop-color="#5a5247"/>
+          <stop offset="100%" stop-color="#403a30"/>
+        </radialGradient>
+        <linearGradient id="gMilky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#efe8da" stop-opacity=".9"/>
+          <stop offset="55%" stop-color="#d9d1c0" stop-opacity=".55"/>
+          <stop offset="100%" stop-color="#b8b09c" stop-opacity=".25"/>
+        </linearGradient>
+        <radialGradient id="gInnerGlow" cx="50%" cy="62%" r="55%">
+          <stop offset="0%"  stop-color="#f0c074" stop-opacity=".9"/>
+          <stop offset="45%" stop-color="#d4a24c" stop-opacity=".45"/>
+          <stop offset="100%" stop-color="#d4a24c" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gWarmPool" cx="38%" cy="34%" r="75%">
+          <stop offset="0%"  stop-color="#e7b25e" stop-opacity=".55"/>
+          <stop offset="50%" stop-color="#d4a24c" stop-opacity=".18"/>
+          <stop offset="100%" stop-color="#d4a24c" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gSil" cx="50%" cy="40%" r="62%">
+          <stop offset="0%"  stop-color="#3a3477"/>
+          <stop offset="60%" stop-color="#26215c"/>
+          <stop offset="100%" stop-color="#16133a"/>
+        </radialGradient>
+
+        <!-- ===== gradients: creature ===== -->
+        <radialGradient id="gBody" cx="40%" cy="32%" r="78%">
+          <stop offset="0%"  stop-color="#4a41a0"/>
+          <stop offset="48%" stop-color="#3c3489"/>
+          <stop offset="100%" stop-color="#241f55"/>
+        </radialGradient>
+        <radialGradient id="gHead" cx="40%" cy="30%" r="76%">
+          <stop offset="0%"  stop-color="#7068cc"/>
+          <stop offset="46%" stop-color="#534ab7"/>
+          <stop offset="100%" stop-color="#332c7a"/>
+        </radialGradient>
+        <radialGradient id="gWing" cx="42%" cy="34%" r="82%">
+          <stop offset="0%"  stop-color="#6259c4"/>
+          <stop offset="55%" stop-color="#534ab7"/>
+          <stop offset="100%" stop-color="#352d80"/>
+        </radialGradient>
+        <radialGradient id="gWingSpot" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stop-color="#c8c3f2"/>
+          <stop offset="60%" stop-color="#afa9ec"/>
+          <stop offset="100%" stop-color="#8079d8" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gTuft" cx="42%" cy="30%" r="75%">
+          <stop offset="0%"  stop-color="#afa9ec"/>
+          <stop offset="55%" stop-color="#7f77dd"/>
+          <stop offset="100%" stop-color="#5e56b8"/>
+        </radialGradient>
+
+        <!-- ===== gradients: walnut base / nameplate ===== -->
+        <linearGradient id="gWalnut" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#4a2d1a"/>
+          <stop offset="45%" stop-color="#3d2515"/>
+          <stop offset="100%" stop-color="#2a1810"/>
+        </linearGradient>
+        <radialGradient id="gWalnutTop" cx="50%" cy="38%" r="70%">
+          <stop offset="0%"  stop-color="#5a3a22"/>
+          <stop offset="60%" stop-color="#3d2515"/>
+          <stop offset="100%" stop-color="#241208"/>
+        </radialGradient>
+        <linearGradient id="gAmber" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#f0c878" stop-opacity=".95"/>
+          <stop offset="50%" stop-color="#d4a24c" stop-opacity=".9"/>
+          <stop offset="100%" stop-color="#a8742c" stop-opacity=".92"/>
+        </linearGradient>
+
+        <!-- ===== filters ===== -->
+        <filter id="fStone" x="-15%" y="-15%" width="130%" height="130%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.024 0.03" numOctaves="3" seed="11" result="n"/>
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0" result="g"/>
+          <feComponentTransfer in="g" result="g2"><feFuncA type="linear" slope="0.16"/></feComponentTransfer>
+          <feComposite in="g2" in2="SourceAlpha" operator="in" result="gm"/>
+          <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="gm"/></feMerge>
+        </filter>
+
+        <filter id="fVelvet" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/>
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0" result="g"/>
+          <feComponentTransfer in="g" result="g2"><feFuncA type="linear" slope="0.07"/></feComponentTransfer>
+          <feComposite in="g2" in2="SourceAlpha" operator="in" result="gm"/>
+          <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="gm"/></feMerge>
+        </filter>
+
+        <filter id="fFuzz" x="-40%" y="-40%" width="180%" height="180%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.16" numOctaves="2" seed="9" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+
+        <filter id="fWood" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.11" numOctaves="4" seed="22" result="n"/>
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .8 0" result="g"/>
+          <feComponentTransfer in="g" result="g2"><feFuncA type="gamma" amplitude="1" exponent="2.4" offset="0"/></feComponentTransfer>
+          <feComposite in="g2" in2="SourceAlpha" operator="in" result="gm"/>
+          <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="gm"/></feMerge>
+        </filter>
+
+        <filter id="fSoft" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="9"/>
+        </filter>
+        <filter id="fSoftBig" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="22"/>
+        </filter>
+        <filter id="fSilBlur" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="6"/>
+        </filter>
+
+        <filter id="fHaze" x="-30%" y="-40%" width="160%" height="180%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.04" numOctaves="2" seed="3" result="n">
+            <animate attributeName="baseFrequency" dur="7s" values="0.012 0.04; 0.016 0.05; 0.012 0.04" repeatCount="indefinite"/>
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+
+        <!-- egg outline reused for clip + milky + base shape -->
+        <path id="eggPath" d="M 450 184
+          C 514 184, 562 262, 564 352
+          C 566 452, 516 506, 450 506
+          C 384 506, 334 452, 336 352
+          C 338 262, 386 184, 450 184 Z"/>
+        <clipPath id="eggClip"><use href="#eggPath"/></clipPath>
+      </defs>
+
+      <!-- =============== SCENE =============== -->
+      <g id="scene" class="is-sealed" style="--warmth-glow:0">
+
+        <!-- contact shadow -->
+        <ellipse id="shadow" class="lyr" cx="450" cy="566" rx="150" ry="30" fill="#000" opacity=".5" filter="url(#fSoftBig)"/>
+
+        <!-- WALNUT DISPLAY BASE (displayed) -->
+        <g id="base" class="lyr">
+          <ellipse cx="450" cy="612" rx="200" ry="46" fill="#000" opacity=".55" filter="url(#fSoftBig)"/>
+          <!-- side wall of platform -->
+          <path d="M 262 588 C 262 624, 350 648, 450 648 C 550 648, 638 624, 638 588 L 638 568 C 638 600, 550 622, 450 622 C 350 622, 262 600, 262 568 Z" fill="url(#gWalnut)"/>
+          <!-- top -->
+          <ellipse cx="450" cy="568" rx="188" ry="44" fill="url(#gWalnutTop)" filter="url(#fWood)"/>
+          <ellipse cx="450" cy="568" rx="188" ry="44" fill="none" stroke="#5a3a22" stroke-opacity=".5" stroke-width="1.5"/>
+          <!-- inner seat ring -->
+          <ellipse cx="450" cy="566" rx="120" ry="26" fill="#000" opacity=".22" filter="url(#fSoft)"/>
+          <!-- top sheen -->
+          <ellipse cx="410" cy="552" rx="120" ry="20" fill="#7a4f2e" opacity=".22" filter="url(#fSoft)"/>
+        </g>
+
+        <!-- floating egg (carries shell + internals + shards + cracks) -->
+        <g id="eggFloat">
+
+          <!-- inner warm glow (behind shell, shows through when translucent) -->
+          <g id="innerGlow" class="lyr">
+            <ellipse cx="450" cy="396" rx="150" ry="170" fill="url(#gInnerGlow)" filter="url(#fSoft)"/>
+          </g>
+
+          <!-- sleeping silhouette + eye-spots (behind translucent shell) -->
+          <g id="silhouette" class="lyr" clip-path="url(#eggClip)">
+            <ellipse cx="450" cy="400" rx="92" ry="104" fill="url(#gSil)" filter="url(#fSilBlur)"/>
+            <circle cx="450" cy="320" r="66" fill="url(#gSil)" filter="url(#fSilBlur)"/>
+            <g id="eyeSpots">
+              <circle cx="424" cy="330" r="13" fill="#26215c"/>
+              <circle cx="476" cy="334" r="11" fill="#26215c"/>
+              <circle cx="424" cy="330" r="20" fill="#3a2d6e" opacity=".4" filter="url(#fSoft)"/>
+              <circle cx="476" cy="334" r="18" fill="#3a2d6e" opacity=".4" filter="url(#fSoft)"/>
+            </g>
+          </g>
+
+          <!-- BROKEN SHELL SHARDS (hatched / displayed) -->
+          <!-- left half -->
+          <g id="shardL" class="lyr">
+            <path d="M 450 184
+              C 386 184, 338 262, 336 352
+              C 334 452, 384 506, 450 506
+              L 451 470 L 442 430 L 453 388 L 441 346 L 452 300 L 444 250 L 450 184 Z"
+              fill="url(#gStone)" filter="url(#fStone)"/>
+            <!-- raw inner break face -->
+            <path d="M 450 506 L 451 470 L 442 430 L 453 388 L 441 346 L 452 300 L 444 250 L 450 184"
+              fill="none" stroke="url(#gStoneInner)" stroke-width="7" stroke-linejoin="round"/>
+            <path d="M 450 506 L 451 470 L 442 430 L 453 388 L 441 346 L 452 300 L 444 250 L 450 184"
+              fill="none" stroke="#2a241b" stroke-opacity=".5" stroke-width="2"/>
+          </g>
+          <!-- right half -->
+          <g id="shardR" class="lyr">
+            <path d="M 450 184
+              C 514 184, 562 262, 564 352
+              C 566 452, 516 506, 450 506
+              L 449 470 L 458 430 L 447 388 L 459 346 L 448 300 L 456 250 L 450 184 Z"
+              fill="url(#gStone)" filter="url(#fStone)"/>
+            <path d="M 450 506 L 449 470 L 458 430 L 447 388 L 459 346 L 448 300 L 456 250 L 450 184"
+              fill="none" stroke="url(#gStoneInner)" stroke-width="7" stroke-linejoin="round"/>
+            <path d="M 450 506 L 449 470 L 458 430 L 447 388 L 459 346 L 448 300 L 456 250 L 450 184"
+              fill="none" stroke="#2a241b" stroke-opacity=".5" stroke-width="2"/>
+          </g>
+
+          <!-- INTACT SHELL (sealed / triggered) -->
+          <g id="shell" class="lyr">
+            <use href="#eggPath" fill="url(#gStone)" filter="url(#fStone)"/>
+            <!-- speckles injected by JS into here -->
+            <g id="speckles" clip-path="url(#eggClip)"></g>
+            <!-- subtle vertical seam -->
+            <path d="M 450 188 C 452 300, 452 400, 450 502" fill="none" stroke="#000" stroke-opacity=".14" stroke-width="1.4"/>
+            <!-- soft key highlight upper-left -->
+            <ellipse cx="406" cy="282" rx="58" ry="78" fill="#fff" opacity=".07" filter="url(#fSoft)" clip-path="url(#eggClip)"/>
+            <!-- ambient occlusion at base -->
+            <ellipse cx="450" cy="492" rx="96" ry="34" fill="#000" opacity=".22" filter="url(#fSoft)" clip-path="url(#eggClip)"/>
+            <!-- rim -->
+            <use href="#eggPath" fill="none" stroke="#1c1812" stroke-opacity=".5" stroke-width="1.5"/>
+          </g>
+
+          <!-- milky translucent tint (triggered) -->
+          <use id="shellMilky" class="lyr" href="#eggPath" fill="url(#gMilky)" clip-path="url(#eggClip)" opacity="0"/>
+
+          <!-- heat-haze warm band above egg -->
+          <g id="haze">
+            <rect x="320" y="150" width="260" height="170" fill="url(#gWarmPool)" filter="url(#fHaze)" opacity=".5"/>
+          </g>
+
+          <!-- warm pool (sealed warming + triggered) -->
+          <use id="warmPool" class="lyr" href="#eggPath" fill="url(#gWarmPool)" clip-path="url(#eggClip)"/>
+
+          <!-- hairline cracks (triggered) -->
+          <g id="cracks" class="lyr" clip-path="url(#eggClip)"
+             fill="none" stroke="#19150f" stroke-width="1.6" stroke-linecap="round" opacity="0">
+            <path pathLength="1" d="M 466 300 L 452 256 L 470 214 L 458 188"/>
+            <path pathLength="1" d="M 466 300 L 506 268 L 540 250 L 556 226"/>
+            <path pathLength="1" d="M 466 300 L 500 340 L 528 384 L 540 430"/>
+            <path pathLength="1" d="M 466 300 L 426 318 L 388 332 L 360 360"/>
+            <path pathLength="1" d="M 466 300 L 446 350 L 430 404 L 426 452"/>
+          </g>
+        </g><!-- /eggFloat -->
+
+        <!-- =============== CREATURE : TUFT =============== -->
+        <g id="creature" class="lyr" filter="url(#fVelvet)">
+
+          <!-- wings (behind body) -->
+          <g id="wingLpiv">
+            <path d="M 444 404
+              C 360 336, 296 300, 270 332
+              C 244 372, 270 440, 318 470
+              C 360 496, 416 480, 446 436 Z"
+              fill="url(#gWing)"/>
+            <path d="M 444 404 C 376 352, 320 326, 296 344" fill="none" stroke="#2f2870" stroke-opacity=".5" stroke-width="2"/>
+            <ellipse cx="330" cy="392" rx="26" ry="30" fill="url(#gWingSpot)"/>
+          </g>
+          <g id="wingRpiv">
+            <path d="M 456 404
+              C 540 336, 604 300, 630 332
+              C 656 372, 630 440, 582 470
+              C 540 496, 484 480, 454 436 Z"
+              fill="url(#gWing)"/>
+            <path d="M 456 404 C 524 352, 580 326, 604 344" fill="none" stroke="#2f2870" stroke-opacity=".5" stroke-width="2"/>
+            <ellipse cx="570" cy="392" rx="26" ry="30" fill="url(#gWingSpot)"/>
+          </g>
+
+          <!-- body -->
+          <g id="bodyCore">
+            <ellipse cx="450" cy="424" rx="72" ry="82" fill="url(#gBody)"/>
+            <!-- belly highlight -->
+            <ellipse cx="432" cy="402" rx="34" ry="44" fill="#5a51b8" opacity=".4" filter="url(#fSoft)"/>
+          </g>
+
+          <!-- neck/head shadow -->
+          <ellipse cx="450" cy="372" rx="56" ry="26" fill="#241f55" opacity=".5" filter="url(#fSoft)"/>
+
+          <!-- antennae -->
+          <g id="antLpiv">
+            <path d="M 432 268 C 410 230, 398 208, 388 190" fill="none" stroke="#423a92" stroke-width="4.5" stroke-linecap="round"/>
+            <circle cx="386" cy="184" r="11" fill="url(#gTuft)" filter="url(#fFuzz)"/>
+          </g>
+          <g id="antRpiv">
+            <path d="M 468 268 C 490 230, 502 208, 512 190" fill="none" stroke="#423a92" stroke-width="4.5" stroke-linecap="round"/>
+            <circle cx="514" cy="184" r="11" fill="url(#gTuft)" filter="url(#fFuzz)"/>
+          </g>
+
+          <!-- head -->
+          <circle cx="450" cy="320" r="78" fill="url(#gHead)"/>
+          <ellipse cx="424" cy="296" rx="30" ry="34" fill="#7b73d6" opacity=".42" filter="url(#fSoft)"/>
+
+          <!-- fuzzy tuft crown -->
+          <g id="tufts" filter="url(#fFuzz)">
+            <circle cx="450" cy="252" r="26" fill="url(#gTuft)"/>
+            <circle cx="416" cy="262" r="20" fill="url(#gTuft)"/>
+            <circle cx="484" cy="262" r="20" fill="url(#gTuft)"/>
+            <circle cx="436" cy="240" r="17" fill="url(#gTuft)"/>
+            <circle cx="466" cy="240" r="17" fill="url(#gTuft)"/>
+            <circle cx="450" cy="232" r="13" fill="#afa9ec"/>
+            <circle cx="428" cy="250" r="8"  fill="#c8c3f2" opacity=".8"/>
+            <circle cx="472" cy="250" r="8"  fill="#c8c3f2" opacity=".8"/>
+          </g>
+
+          <!-- eyes (asymmetric) -->
+          <g id="eyes">
+            <circle cx="422" cy="330" r="15" fill="#26215c"/>
+            <circle cx="481" cy="333" r="12.5" fill="#26215c"/>
+            <circle cx="417" cy="324" r="4.2" fill="#fff" opacity=".92"/>
+            <circle cx="476" cy="328" r="3.4" fill="#fff" opacity=".92"/>
+            <!-- soft under-eye cheek warmth -->
+            <ellipse cx="412" cy="356" rx="14" ry="8" fill="#6a5fc8" opacity=".35" filter="url(#fSoft)"/>
+            <ellipse cx="490" cy="358" rx="13" ry="7" fill="#6a5fc8" opacity=".35" filter="url(#fSoft)"/>
+          </g>
+        </g><!-- /creature -->
+
+        <!-- AMBER NAMEPLATE (displayed) -->
+        <g id="nameplate" class="lyr">
+          <rect x="372" y="600" width="156" height="40" rx="5" fill="url(#gAmber)"/>
+          <rect x="372" y="600" width="156" height="40" rx="5" fill="none" stroke="#7a5420" stroke-opacity=".6" stroke-width="1"/>
+          <rect x="372" y="603" width="156" height="13" rx="5" fill="#fff" opacity=".22"/>
+          <text x="450" y="625" text-anchor="middle"
+                font-family="Fraunces, serif" font-style="italic" font-weight="500"
+                font-size="18" letter-spacing="1.5" fill="#2a1808">TUFT · 01 / 13</text>
+        </g>
+
+      </g><!-- /scene -->
+    </svg>
+
+    <div class="hint">Drag the timeline · press 1–4 · space to auto-play</div>
+  </main>
+
+  <footer class="controls">
+    <nav class="steps" id="steps">
+      <button class="step active" data-state="sealed"><span class="num">01</span><span class="name">Sealed</span></button>
+      <button class="step" data-state="triggered"><span class="num">02</span><span class="name">Triggered</span></button>
+      <button class="step" data-state="hatched"><span class="num">03</span><span class="name">Hatched</span></button>
+      <button class="step" data-state="displayed"><span class="num">04</span><span class="name">Displayed</span></button>
+    </nav>
+    <div class="transport">
+      <button class="play" id="play"><span class="ico"></span><span id="play-lbl">Auto-play</span></button>
+      <div class="progress" id="progress"><div class="rail"><i id="progfill"></i>
+        <span class="tick" style="left:52.2%"></span>
+        <span class="tick" style="left:73.3%"></span>
+        <span class="tick" style="left:88.9%"></span>
+      </div></div>
+    </div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const scene   = document.getElementById('scene');
+  const stepsEl = document.getElementById('steps');
+  const placard = document.getElementById('placard');
+  const plIdx   = document.getElementById('pl-idx');
+  const plTitle = document.getElementById('pl-title');
+  const plBody  = document.getElementById('pl-body');
+  const playBtn = document.getElementById('play');
+  const playLbl = document.getElementById('play-lbl');
+  const progEl  = document.getElementById('progress');
+  const progFill= document.getElementById('progfill');
+  const warmth  = document.getElementById('warmth');
+  const warmthV = document.getElementById('warmth-val');
+  const warmthB = document.getElementById('warmth-bar');
+
+  const ORDER = ['sealed','triggered','hatched','displayed'];
+
+  const COPY = {
+    sealed: {
+      idx: 'State 01 / 04', title: 'Sealed',
+      body: 'A dormant egg of porous volcanic stone, just out of the box. Cradle it in warm hands to wake what sleeps inside.'
+    },
+    triggered: {
+      idx: 'State 02 / 04', title: 'Triggered',
+      body: 'Sixty seconds of warmth. The shell turns milky and translucent, a sleeping silhouette stirs, and hairline cracks spread from a single point.'
+    },
+    hatched: {
+      idx: 'State 03 / 04', title: 'Hatched',
+      body: 'Tuft, the cave moth. Velvet wings, a crown of fuzzy tufts, indigo eyes — and the unmistakable look of having just woken up.'
+    },
+    displayed: {
+      idx: 'State 04 / 04', title: 'Displayed',
+      body: 'The keepsake. Perched on turned black walnut, the shell halves snapped magnetically into a cradle. Engraved amber: TUFT · 01 / 13.'
+    }
+  };
+
+  // ---- generate stone speckles (seeded, deterministic) ----
+  (function speckle(){
+    const g = document.getElementById('speckles');
+    const NS = 'http://www.w3.org/2000/svg';
+    let seed = 1337;
+    const rnd = () => (seed = (seed*1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+    for (let i=0;i<46;i++){
+      const a = rnd()*Math.PI*2;
+      const r = Math.sqrt(rnd())*120;
+      const cx = 450 + Math.cos(a)*r;
+      const cy = 350 + Math.sin(a)*r*1.35;
+      const rad = 1 + rnd()*3.2;
+      const dot = document.createElementNS(NS,'ellipse');
+      dot.setAttribute('cx', cx.toFixed(1));
+      dot.setAttribute('cy', cy.toFixed(1));
+      dot.setAttribute('rx', rad.toFixed(1));
+      dot.setAttribute('ry', (rad*0.85).toFixed(1));
+      dot.setAttribute('fill', rnd() > 0.78 ? '#6a6150' : '#211c14');
+      dot.setAttribute('opacity', (0.18 + rnd()*0.32).toFixed(2));
+      g.appendChild(dot);
+    }
+  })();
+
+  // ---- state application ----
+  let current = 'sealed';
+  function applyState(state, warmGlow){
+    if (state !== current){
+      placard.classList.add('swap');
+      setTimeout(() => {
+        const c = COPY[state];
+        plIdx.textContent = c.idx;
+        plTitle.textContent = c.title;
+        plBody.textContent = c.body;
+        placard.classList.remove('swap');
+      }, 280);
+      current = state;
+    }
+    scene.className = 'is-' + state;
+    [...stepsEl.children].forEach(b =>
+      b.classList.toggle('active', b.dataset.state === state));
+    if (typeof warmGlow === 'number'){
+      scene.style.setProperty('--warmth-glow', warmGlow.toFixed(3));
+    } else if (state === 'sealed'){
+      scene.style.setProperty('--warmth-glow', '0.12');
+    } else {
+      scene.style.setProperty('--warmth-glow', '1');
+    }
+  }
+
+  // ---- AUTO-PLAY timeline (≈90s, sealed → displayed) ----
+  const DURATION = 90000;
+  // phase boundaries (ms)
+  const T_TRIG = 47000;   // sealed warming -> triggered
+  const T_HATCH= 66000;   // triggered -> hatched
+  const T_DISP = 80000;   // hatched -> displayed
+
+  let playing = false;
+  let rafId = null;
+  let startTs = 0;
+  let elapsedAtStart = 0;   // for seek/resume
+
+  function phaseFor(t){
+    if (t < T_TRIG)  return 'sealed';
+    if (t < T_HATCH) return 'triggered';
+    if (t < T_DISP)  return 'hatched';
+    return 'displayed';
+  }
+
+  function renderAt(t){
+    t = Math.max(0, Math.min(DURATION, t));
+    const state = phaseFor(t);
+    // warmth ramps over the sealed phase
+    const warm = Math.min(1, t / T_TRIG);
+    applyState(state, state === 'sealed' ? 0.12 + warm*0.88 : 1);
+
+    progFill.style.width = (t / DURATION * 100).toFixed(2) + '%';
+
+    // warmth read-out only during sealed/triggered warming
+    const showWarm = playing && t < T_HATCH;
+    warmth.classList.toggle('show', showWarm);
+    if (showWarm){
+      const pct = Math.round(warm * 100);
+      warmthV.textContent = pct + '%';
+      warmthB.style.width = pct + '%';
+    }
+  }
+
+  function tick(ts){
+    if (!playing) return;
+    if (!startTs) startTs = ts;
+    const t = elapsedAtStart + (ts - startTs);
+    renderAt(t);
+    if (t >= DURATION){
+      stop(true);
+      return;
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function start(fromT){
+    playing = true;
+    elapsedAtStart = (typeof fromT === 'number')
+      ? fromT
+      : (current === 'displayed' ? 0 : elapsedFromState(current));
+    startTs = 0;
+    playBtn.classList.add('playing');
+    playLbl.textContent = 'Pause';
+    rafId = requestAnimationFrame(tick);
+  }
+  function stop(finished){
+    playing = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    playBtn.classList.remove('playing');
+    playLbl.textContent = finished ? 'Replay' : 'Auto-play';
+    warmth.classList.remove('show');
+    if (finished){ elapsedAtStart = 0; }
+  }
+  function elapsedFromState(s){
+    return { sealed:0, triggered:T_TRIG, hatched:T_HATCH, displayed:T_DISP }[s] || 0;
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (playing) {
+      // capture current elapsed so resume continues
+      elapsedAtStart = elapsedAtStart + (performance.now() - startTs);
+      stop(false);
+    } else {
+      const resumeT = (playLbl.textContent === 'Replay') ? 0 : undefined;
+      start(resumeT);
+    }
+  });
+
+  // step buttons
+  stepsEl.addEventListener('click', e => {
+    const btn = e.target.closest('.step');
+    if (!btn) return;
+    stop(false);
+    elapsedAtStart = elapsedFromState(btn.dataset.state);
+    progFill.style.width = (elapsedAtStart / DURATION * 100).toFixed(2) + '%';
+    applyState(btn.dataset.state);
+  });
+
+  // scrub timeline
+  function seekFromEvent(e){
+    const r = progEl.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    const t = Math.max(0, Math.min(1, x)) * DURATION;
+    elapsedAtStart = t;
+    if (playing){ startTs = 0; }
+    renderAt(t);
+  }
+  let scrubbing = false;
+  progEl.addEventListener('pointerdown', e => {
+    scrubbing = true; progEl.setPointerCapture(e.pointerId);
+    if (!playing) stop(false);
+    seekFromEvent(e);
+  });
+  progEl.addEventListener('pointermove', e => { if (scrubbing) seekFromEvent(e); });
+  progEl.addEventListener('pointerup',   e => { scrubbing = false; });
+
+  // keyboard
+  window.addEventListener('keydown', e => {
+    if (e.key >= '1' && e.key <= '4'){
+      stop(false);
+      const s = ORDER[+e.key - 1];
+      elapsedAtStart = elapsedFromState(s);
+      progFill.style.width = (elapsedAtStart / DURATION * 100).toFixed(2) + '%';
+      applyState(s);
+    } else if (e.code === 'Space'){
+      e.preventDefault();
+      playBtn.click();
+    }
+  });
+
+  // init
+  applyState('sealed');
+})();
+</script>
+</body>
+</html>
