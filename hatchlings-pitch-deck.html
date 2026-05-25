@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hatchlings — Beyond the Egg · Five Reveal Mechanics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0d0b09; --bg2:#15110c;
+    --ink:#ece4d6; --dim:#8c8170; --faint:#5b5345;
+    --amber:#d4a24c; --amber-2:#f0c878;
+    --line:rgba(212,162,76,.22); --line-soft:rgba(233,225,211,.08);
+    --ease:cubic-bezier(.65,.02,.25,1);
+    --accent:#d4a24c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+  body::before{content:"";position:fixed;inset:0;z-index:0;
+    background:
+      radial-gradient(120% 90% at 30% 18%, rgba(212,162,76,.10) 0%, rgba(212,162,76,.03) 30%, transparent 60%),
+      radial-gradient(150% 130% at 50% 45%, var(--bg2) 0%, var(--bg) 64%)}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  /* hidden glyph library */
+  .lib{position:absolute;width:0;height:0;overflow:hidden}
+
+  .deck{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+
+  /* ---------- persistent chrome ---------- */
+  .topbar{display:flex;align-items:baseline;justify-content:space-between;
+    padding:clamp(14px,2.2vw,26px) clamp(20px,4vw,56px) 12px;border-bottom:1px solid var(--line-soft)}
+  .wordmark{font-family:"Fraunces",serif;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+    font-size:clamp(15px,1.7vw,20px)}
+  .wordmark .dot{color:var(--amber)}
+  .deckmeta{font-size:10.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+
+  /* ---------- stage / slides ---------- */
+  .stage{position:relative;flex:1;min-height:0}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(16px,3vh,40px) clamp(24px,6vw,90px);
+    opacity:0;transform:translateY(14px);pointer-events:none;
+    transition:opacity .6s var(--ease),transform .7s var(--ease);overflow-y:auto}
+  .deck:not(.js) .slide{position:static;opacity:1;transform:none;border-bottom:1px solid var(--line-soft)}
+  .slide.on{opacity:1;transform:none;pointer-events:auto}
+
+  .eyebrow{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.34em;
+    text-transform:uppercase;color:var(--dim);margin-bottom:18px}
+  .eyebrow::before{content:"";width:30px;height:1px;background:var(--accent);opacity:.9}
+  .eyebrow .acc{color:var(--accent)}
+
+  h1{font-family:"Fraunces",serif;font-weight:500;letter-spacing:.005em;line-height:.98;margin:0}
+  h2{font-family:"Fraunces",serif;font-weight:500;line-height:1;margin:0}
+  .lede{font-family:"Fraunces",serif;font-style:italic;font-weight:400;color:var(--ink);
+    line-height:1.3}
+
+  /* entrance stagger */
+  .slide.on .stagger>*{animation:rise .65s var(--ease) both}
+  .slide.on .stagger>*:nth-child(2){animation-delay:.06s}
+  .slide.on .stagger>*:nth-child(3){animation-delay:.12s}
+  .slide.on .stagger>*:nth-child(4){animation-delay:.18s}
+  .slide.on .stagger>*:nth-child(5){animation-delay:.24s}
+  .slide.on .stagger>*:nth-child(6){animation-delay:.30s}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  /* ---------- COVER ---------- */
+  .cover{align-items:flex-start}
+  .cover h1{font-size:clamp(48px,9vw,128px)}
+  .cover .sub{font-size:clamp(16px,2.2vw,26px);color:var(--dim);max-width:34ch;margin-top:18px;font-weight:300}
+  .cover .foot{margin-top:auto;padding-top:28px;display:flex;gap:28px;flex-wrap:wrap;
+    font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--faint)}
+  .cover .foot b{color:var(--amber);font-weight:500}
+  .cover .ghost{position:absolute;right:clamp(24px,6vw,120px);top:50%;transform:translateY(-50%);
+    width:min(34vw,400px);opacity:.16;color:#8079d8;pointer-events:none}
+  .cover .ghost .glyphFloat{animation:floaty 9s ease-in-out infinite}
+  @keyframes floaty{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}
+
+  /* ---------- THESIS ---------- */
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,72px);align-items:start;margin-top:8px}
+  .col h3{font-family:"Inter";font-size:11px;letter-spacing:.3em;text-transform:uppercase;margin:0 0 16px}
+  .keep h3{color:#9fd6a8}.drop h3{color:#d68a8a}
+  .col ul{list-style:none;margin:0;padding:0}
+  .col li{font-size:clamp(14px,1.5vw,18px);line-height:1.5;padding:9px 0 9px 22px;position:relative;
+    border-bottom:1px solid var(--line-soft);color:var(--ink)}
+  .keep li::before{content:"+";position:absolute;left:0;color:#9fd6a8}
+  .drop li{color:var(--dim)}
+  .drop li::before{content:"\2715";position:absolute;left:0;color:#d68a8a;font-size:.8em;top:11px}
+  .axisrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+  .axis{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+    border:1px solid var(--line-soft);border-radius:999px;padding:7px 14px}
+  .axis b{color:var(--amber);font-weight:500}
+
+  /* ---------- CONCEPT SLIDE ---------- */
+  .concept{display:grid;grid-template-columns:minmax(260px,38%) 1fr;gap:clamp(28px,5vw,76px);align-items:center}
+  .vis{position:relative;display:grid;place-items:center}
+  .vis svg{width:min(34vh,360px);height:auto;overflow:visible}
+  .vis .cap{position:absolute;bottom:-6px;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--faint)}
+  .bignum{font-family:"Fraunces",serif;font-size:clamp(13px,1.4vw,16px);letter-spacing:.3em;color:var(--accent)}
+  .concept h2{font-size:clamp(40px,6vw,84px);margin:6px 0 0}
+  .accentrule{width:54px;height:2px;background:var(--accent);margin:18px 0;opacity:.85}
+  .hook{font-family:"Fraunces",serif;font-style:italic;font-size:clamp(18px,2.4vw,30px);line-height:1.22;color:var(--ink);max-width:24ch}
+  .body{font-size:clamp(13px,1.45vw,16.5px);line-height:1.55;color:var(--dim);max-width:46ch;margin:16px 0 0;font-weight:300}
+
+  .spec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 30px;margin:22px 0 0;max-width:560px}
+  .spec div{padding:11px 0;border-top:1px solid var(--line-soft)}
+  .spec dt{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+  .spec dd{margin:0;font-size:13.5px;line-height:1.4;color:var(--ink);font-weight:300}
+
+  .why{margin:22px 0 0;padding:13px 0 13px 18px;border-left:2px solid var(--accent);max-width:52ch}
+  .why .lbl{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px}
+  .why p{margin:0;font-family:"Fraunces",serif;font-style:italic;font-size:clamp(14px,1.6vw,18px);line-height:1.35}
+  .market{margin-top:16px;font-size:11px;letter-spacing:.06em;color:var(--faint)}
+  .market b{color:var(--dim);font-weight:500}
+
+  /* ---------- SCORECARD ---------- */
+  .scorewrap{margin-top:14px;overflow-x:auto}
+  table.score{border-collapse:collapse;width:100%;max-width:1000px}
+  table.score th,table.score td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  table.score thead th{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);font-weight:500}
+  table.score tbody th{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(16px,2vw,22px)}
+  table.score tbody th .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:10px;vertical-align:middle}
+  .pips{display:flex;gap:5px}
+  .pip{width:18px;height:5px;border-radius:1px;background:var(--line-soft)}
+  .pip.f{background:var(--pipc,var(--amber))}
+  tr.lead{background:rgba(212,162,76,.05)}
+  .scorenote{margin-top:18px;font-size:13px;color:var(--dim);max-width:70ch;line-height:1.6;font-weight:300}
+  .scorenote b{color:var(--ink);font-weight:500}
+
+  /* ---------- CLOSING ---------- */
+  .closing{align-items:flex-start}
+  .closing h1{font-size:clamp(40px,7vw,96px);max-width:16ch}
+  .pickrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
+  .pick{border:1px solid var(--line-soft);border-radius:10px;padding:16px 20px;min-width:150px}
+  .pick .n{font-family:"Fraunces",serif;font-size:20px}
+  .pick .d{font-size:11px;color:var(--dim);margin-top:6px;letter-spacing:.04em}
+  .pick.star{border-color:var(--line);background:rgba(212,162,76,.06)}
+  .pick.star .n{color:var(--amber-2)}
+  .closing .ask{margin-top:30px;font-family:"Fraunces",serif;font-style:italic;font-size:clamp(18px,2.4vw,28px);color:var(--ink)}
+
+  /* ---------- bottom nav ---------- */
+  .navbar{display:flex;align-items:center;gap:18px;padding:12px clamp(20px,4vw,56px) clamp(14px,2vh,22px);
+    border-top:1px solid var(--line-soft)}
+  .arrow{appearance:none;cursor:pointer;background:transparent;border:1px solid var(--line-soft);color:var(--ink);
+    width:38px;height:38px;border-radius:999px;display:grid;place-items:center;transition:.3s ease}
+  .arrow:hover{border-color:var(--line);background:rgba(212,162,76,.08)}
+  .arrow:disabled{opacity:.25;cursor:default}
+  .arrow svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.7;fill:none}
+  .dots{display:flex;gap:9px;flex:1;flex-wrap:wrap}
+  .dot{width:9px;height:9px;border-radius:999px;background:var(--line-soft);border:0;cursor:pointer;padding:0;transition:.3s}
+  .dot:hover{background:var(--dim)}
+  .dot.on{background:var(--amber);box-shadow:0 0 8px rgba(212,162,76,.6);transform:scale(1.15)}
+  .counter{font-family:"Fraunces",serif;font-size:14px;letter-spacing:.12em;color:var(--dim);white-space:nowrap}
+  .counter b{color:var(--ink)}
+  .khint{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+
+  /* ---------- emblem animations ---------- */
+  .glyphFill .gbody{fill:currentColor}
+  .glyphFill .gtuft{fill:currentColor;opacity:.72}
+  .glyphFill .gwing{fill:currentColor;opacity:.5}
+  .glyphFill .geye{fill:#161229}
+  .glyphLine *{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .glyphLine .geye{fill:currentColor;stroke:none}
+
+  /* specimen */
+  @keyframes thaw{0%,12%{opacity:1}50%,62%{opacity:.06}88%,100%{opacity:1}}
+  @keyframes subjectClear{0%,12%{opacity:.18}50%,62%{opacity:1}88%,100%{opacity:.18}}
+  .e-frost{animation:thaw 6s var(--ease) infinite}
+  .e-subject{animation:subjectClear 6s var(--ease) infinite}
+  /* nocturne */
+  @keyframes night{0%,100%{opacity:.12}50%{opacity:1}}
+  .e-glow{animation:night 4.5s ease-in-out infinite}
+  .e-noct-line{animation:night 4.5s ease-in-out infinite}
+  /* unfurl */
+  @keyframes bloom{0%,100%{transform:scale(.66) rotate(0)}50%{transform:scale(1.06) rotate(36deg)}}
+  .e-petals{transform-box:fill-box;transform-origin:center;animation:bloom 5.5s ease-in-out infinite}
+  /* symbiont */
+  @keyframes approach{0%,100%{transform:translateX(34px)}46%,60%{transform:translateX(0)}}
+  @keyframes spark{0%,40%{opacity:0;transform:scale(.3)}50%{opacity:.9;transform:scale(1)}66%{opacity:0;transform:scale(1.5)}100%{opacity:0}}
+  .e-dweller{transform-box:fill-box;transform-origin:center;animation:approach 4.6s ease-in-out infinite}
+  .e-spark{transform-box:fill-box;transform-origin:center;animation:spark 4.6s ease-in-out infinite}
+  /* latent */
+  @keyframes develop{0%,8%{opacity:0}46%,82%{opacity:1}100%{opacity:0}}
+  .e-mark{opacity:0;animation:develop 6.5s var(--ease) infinite}
+  .e-mark.m2{animation-delay:.5s}.e-mark.m3{animation-delay:1s}.e-mark.m4{animation-delay:1.5s}.e-mark.m5{animation-delay:2s}
+  @keyframes washIn{0%,8%{opacity:.12}50%,82%{opacity:.85}100%{opacity:.12}}
+  .e-wash{animation:washIn 6.5s var(--ease) infinite}
+
+  @media (max-width:860px){
+    .concept,.twocol{grid-template-columns:1fr;gap:22px}
+    .spec{grid-template-columns:1fr}
+    .cover .ghost{display:none}
+    .khint{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== glyph library ===== -->
+<svg class="lib" aria-hidden="true">
+  <symbol id="glyph" viewBox="0 0 200 220">
+    <ellipse class="gwing" cx="54" cy="124" rx="33" ry="46"/>
+    <ellipse class="gwing" cx="146" cy="124" rx="33" ry="46"/>
+    <ellipse class="gbody" cx="100" cy="138" rx="34" ry="42"/>
+    <circle  class="gbody" cx="100" cy="84" r="37"/>
+    <circle  class="gtuft" cx="100" cy="44" r="15"/>
+    <circle  class="gtuft" cx="79" cy="53" r="11"/>
+    <circle  class="gtuft" cx="121" cy="53" r="11"/>
+    <path class="gbody" d="M84 50 C76 30 70 22 64 14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <path class="gbody" d="M116 50 C124 30 130 22 136 14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <circle class="geye" cx="89" cy="86" r="5.5"/>
+    <circle class="geye" cx="111" cy="88" r="4.5"/>
+  </symbol>
+</svg>
+
+<div class="deck" id="deck">
+
+  <div class="topbar">
+    <div class="wordmark">Hatchlings<span class="dot"> · </span></div>
+    <div class="deckmeta">Series Development &nbsp;/&nbsp; Reveal Mechanics Study</div>
+  </div>
+
+  <div class="stage" id="stage">
+
+    <!-- 0 · COVER -->
+    <section class="slide cover on" style="--accent:#d4a24c">
+      <div class="ghost"><svg viewBox="0 0 200 220" class="glyphFill"><g class="glyphFloat"><use href="#glyph"/></g></svg></div>
+      <div class="stagger">
+        <div class="eyebrow"><span class="acc">Concept Pitch</span> &nbsp;·&nbsp; Five Directions</div>
+        <h1>Beyond<br>the Egg.</h1>
+        <p class="sub">Five reveal mechanics for a premium blind-box creature line — none of which is an egg that cracks open.</p>
+      </div>
+      <div class="foot">
+        <span>Prepared for <b>Tyler</b></span>
+        <span>Hatchlings · Series 01 Deep Thaw</span>
+        <span><b>5</b> concepts — pick one to prototype</span>
+      </div>
+    </section>
+
+    <!-- 1 · THESIS -->
+    <section class="slide" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">The Problem</div>
+        <h2 style="font-size:clamp(30px,5vw,64px);max-width:18ch">The egg is the most crowded shelf in toys.</h2>
+        <p class="body" style="max-width:60ch;font-size:clamp(14px,1.5vw,18px)">Hatchimals, Kinder &amp; L.O.L. surprise eggs, grow-in-water dinos, plaster dig-out kits — &ldquo;crack it open to reveal a creature&rdquo; is fully colonized. The brand DNA worth keeping was never the egg. It&rsquo;s the <em style="font-style:italic;color:var(--ink)">mystery, the trigger, the ugly-cute creature, and the keepsake.</em></p>
+        <div class="twocol">
+          <div class="col keep">
+            <h3>Keep the DNA</h3>
+            <ul>
+              <li>Premium kidult blind-box</li>
+              <li>An environmental trigger</li>
+              <li>An &ldquo;ugly-cute&rdquo; creature</li>
+              <li>An editorial keepsake ending</li>
+            </ul>
+          </div>
+          <div class="col drop">
+            <h3>Drop the trope</h3>
+            <ul>
+              <li>Shell that shatters once</li>
+              <li>A one-and-done reveal</li>
+              <li>A static plush payoff</li>
+              <li>Gamified, childish framing</li>
+            </ul>
+          </div>
+        </div>
+        <div class="axisrow">
+          <span class="axis">We innovate the <b>reveal axis</b>:</span>
+          <span class="axis">Clarify</span><span class="axis">Glow</span><span class="axis">Unfurl</span><span class="axis">Pair</span><span class="axis">Develop</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · SPECIMEN -->
+    <section class="slide concept" style="--accent:#bfe3e8">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Specimen emblem">
+          <defs>
+            <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#dff1f4" stop-opacity=".22"/>
+              <stop offset="1" stop-color="#9fc4cb" stop-opacity=".10"/>
+            </linearGradient>
+            <linearGradient id="frostg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#eef6f7" stop-opacity=".95"/>
+              <stop offset="1" stop-color="#cfe2e5" stop-opacity=".8"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="160" cy="288" rx="86" ry="14" fill="#000" opacity=".4"/>
+          <rect x="146" y="276" width="28" height="14" fill="#2a1810"/>
+          <rect x="120" y="288" width="80" height="10" rx="3" fill="#3d2515"/>
+          <g class="e-subject" color="#4a418f"><svg x="108" y="78" width="104" height="120" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+          <rect x="74" y="58" width="172" height="208" rx="20" fill="url(#glass)" stroke="#cfe2e5" stroke-opacity=".4" stroke-width="1.5"/>
+          <path d="M92 70 L120 70 L96 250 L82 250 Z" fill="#fff" opacity=".06"/>
+          <rect class="e-frost" x="74" y="58" width="172" height="208" rx="20" fill="url(#frostg)"/>
+        </svg>
+        <span class="cap">opaque frost → optical clarity</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">Concept 01</div>
+        <h2>Specimen</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Discovery, not birth.&rdquo;</p>
+        <p class="body">The creature is suspended inside a frosted, opaque block of permafrost resin. Cradle it and the block doesn&rsquo;t break — it <em style="color:var(--ink);font-style:italic">clears</em>. Frost gives way to glass until the specimen floats in full view, like an inclusion in amber.</p>
+        <dl class="spec">
+          <div><dt>Trigger</dt><dd>60 seconds of warmth</dd></div>
+          <div><dt>Reveal axis</dt><dd>Clarification — opaque to optically clear</dd></div>
+          <div><dt>Keepsake</dt><dd>Cleared block on a plinth, engraved field-guide label</dd></div>
+          <div><dt>Collection</dt><dd>A fictional taxonomy; each box is a catalogued &ldquo;recovered specimen&rdquo;</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">Why it isn&rsquo;t the egg</span>
+          <p>Nothing shatters and nothing is born. You thaw a fossil into focus — and it completes the &ldquo;Deep Thaw&rdquo; story literally.</p></div>
+        <p class="market"><b>Market angle:</b> highest visual luxury — reads as a design object, sells to adults who&rsquo;d never buy a &ldquo;toy.&rdquo;</p>
+      </div>
+    </section>
+
+    <!-- 3 · NOCTURNE -->
+    <section class="slide concept" style="--accent:#c9a3ee">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Nocturne emblem">
+          <defs>
+            <radialGradient id="stone" cx="40%" cy="34%" r="70%">
+              <stop offset="0" stop-color="#3a352b"/><stop offset="1" stop-color="#1a1611"/>
+            </radialGradient>
+            <radialGradient id="noctglow" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="#f0c878" stop-opacity=".9"/>
+              <stop offset="45%" stop-color="#b48be0" stop-opacity=".5"/>
+              <stop offset="100%" stop-color="#b48be0" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="160" cy="282" rx="78" ry="13" fill="#000" opacity=".45"/>
+          <circle class="e-glow" cx="160" cy="160" r="120" fill="url(#noctglow)"/>
+          <circle cx="160" cy="160" r="92" fill="url(#stone)"/>
+          <g class="e-noct-line" color="#f4d9a0"><svg x="100" y="92" width="120" height="132" viewBox="0 0 200 220" class="glyphLine"><use href="#glyph"/></svg></g>
+        </svg>
+        <span class="cap">opaque by day · glows by night</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">Concept 02</div>
+        <h2>Nocturne</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;A reveal that returns every night.&rdquo;</p>
+        <p class="body">A featureless matte stone by day. In darkness it glows — and the creature exists <em style="color:var(--ink);font-style:italic">only</em> in that glow. The palette is set by how much light it drank: a bright sill yields warm amber; a dim shelf, cold violet.</p>
+        <dl class="spec">
+          <div><dt>Trigger</dt><dd>Darkness, charged by ambient light</dd></div>
+          <div><dt>Reveal axis</dt><dd>Recurring &amp; variable — never the same twice</dd></div>
+          <div><dt>Keepsake</dt><dd>A shelf object that performs nightly</dd></div>
+          <div><dt>Collection</dt><dd>13 creatures, each a distinct glow signature</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">Why it isn&rsquo;t the egg</span>
+          <p>The reveal never gets used up. It earns a permanent place on the shelf instead of a place in the drawer.</p></div>
+        <p class="market"><b>Market angle:</b> highest retention &amp; ritual — the &ldquo;it does something every night&rdquo; hook.</p>
+      </div>
+    </section>
+
+    <!-- 4 · UNFURL -->
+    <section class="slide concept" style="--accent:#e6b45c">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Unfurl emblem">
+          <defs>
+            <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#5a4a2a"/><stop offset="1" stop-color="#2e2412"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="160" cy="286" rx="74" ry="12" fill="#000" opacity=".4"/>
+          <g color="#4a418f"><svg x="120" y="118" width="80" height="88" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+          <g class="e-petals">
+            <g transform="rotate(0 160 160)"><path d="M160 160 C132 120 138 70 160 40 C182 70 188 120 160 160 Z" fill="url(#plate)" stroke="#6a5630" stroke-opacity=".5"/></g>
+            <g transform="rotate(72 160 160)"><path d="M160 160 C132 120 138 70 160 40 C182 70 188 120 160 160 Z" fill="url(#plate)" stroke="#6a5630" stroke-opacity=".5"/></g>
+            <g transform="rotate(144 160 160)"><path d="M160 160 C132 120 138 70 160 40 C182 70 188 120 160 160 Z" fill="url(#plate)" stroke="#6a5630" stroke-opacity=".5"/></g>
+            <g transform="rotate(216 160 160)"><path d="M160 160 C132 120 138 70 160 40 C182 70 188 120 160 160 Z" fill="url(#plate)" stroke="#6a5630" stroke-opacity=".5"/></g>
+            <g transform="rotate(288 160 160)"><path d="M160 160 C132 120 138 70 160 40 C182 70 188 120 160 160 Z" fill="url(#plate)" stroke="#6a5630" stroke-opacity=".5"/></g>
+          </g>
+        </svg>
+        <span class="cap">unfurls to wake · folds to sleep</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">Concept 03</div>
+        <h2>Unfurl</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;It sleeps. It wakes.&rdquo;</p>
+        <p class="body">Not a shell that shatters — a faceted carapace whose plates mechanically unfurl with one satisfying twist to reveal the creature curled in its heart, then fold shut to sleep. Tied to daylight, it opens at morning and closes at dusk.</p>
+        <dl class="spec">
+          <div><dt>Trigger</dt><dd>A twist of the hand + daylight</dd></div>
+          <div><dt>Reveal axis</dt><dd>Reversible &amp; kinetic</dd></div>
+          <div><dt>Keepsake</dt><dd>Poseable, open or closed</dd></div>
+          <div><dt>Collection</dt><dd>Each carapace a different fold geometry</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">Why it isn&rsquo;t the egg</span>
+          <p>A living-feeling kinetic sculpture, repeatable forever. The mechanism itself is the joy.</p></div>
+        <p class="market"><b>Market angle:</b> fidget / ASMR-adjacent — the satisfying-mechanism crowd.</p>
+      </div>
+    </section>
+
+    <!-- 5 · SYMBIONT -->
+    <section class="slide concept" style="--accent:#7fd6c2">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Symbiont emblem">
+          <defs>
+            <radialGradient id="sparkg" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="#bff3e7" stop-opacity=".95"/>
+              <stop offset="60%" stop-color="#7fd6c2" stop-opacity=".4"/>
+              <stop offset="100%" stop-color="#7fd6c2" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="hostg" cx="40%" cy="34%" r="72%">
+              <stop offset="0" stop-color="#7a6c4e"/><stop offset="1" stop-color="#352f1f"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="160" cy="284" rx="92" ry="13" fill="#000" opacity=".4"/>
+          <!-- host (left): an open cupped shell -->
+          <path d="M150 90 A70 70 0 1 0 150 230 A52 52 0 1 1 150 90 Z" fill="url(#hostg)" stroke="#a8966c" stroke-opacity=".75" stroke-width="1.5"/>
+          <!-- spark at the meeting line -->
+          <circle class="e-spark" cx="150" cy="160" r="46" fill="url(#sparkg)"/>
+          <!-- dweller (right) approaches -->
+          <g class="e-dweller" color="#4a418f"><svg x="150" y="112" width="96" height="106" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+        </svg>
+        <span class="cap">dormant until paired</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">Concept 04</div>
+        <h2>Symbiont</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Incomplete on purpose.&rdquo;</p>
+        <p class="body">The series splits into <em style="color:var(--ink);font-style:italic">hosts</em> and <em style="color:var(--ink);font-style:italic">dwellers</em>. A dweller stays dormant until set beside its true host — magnetic alignment wakes it (no battery) and the pair snaps into a finished diorama. You can&rsquo;t complete a creature alone.</p>
+        <dl class="spec">
+          <div><dt>Trigger</dt><dd>Correct host-dweller pairing</dd></div>
+          <div><dt>Reveal axis</dt><dd>Relational &amp; social</dd></div>
+          <div><dt>Keepsake</dt><dd>A finished two-part scene</dd></div>
+          <div><dt>Collection</dt><dd>Pairing-driven — you need others&rsquo; boxes</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">Why it isn&rsquo;t the egg</span>
+          <p>It moves the magic from &ldquo;open the box&rdquo; to trading &amp; matchmaking. A community engine, built in.</p></div>
+        <p class="market"><b>Market angle:</b> best business / LTV — drives repeat buys and a trading culture.</p>
+      </div>
+    </section>
+
+    <!-- 6 · LATENT -->
+    <section class="slide concept" style="--accent:#b9a6f0">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Latent emblem">
+          <ellipse cx="160" cy="284" rx="70" ry="12" fill="#000" opacity=".4"/>
+          <g color="#8079d8"><svg x="100" y="86" width="120" height="132" viewBox="0 0 200 220" class="glyphLine"><use href="#glyph"/></svg></g>
+          <g color="#6f64c8"><svg class="e-wash" x="100" y="86" width="120" height="132" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+          <!-- developing markings -->
+          <circle class="e-mark m1" cx="160" cy="150" r="10" fill="#afa9ec"/>
+          <circle class="e-mark m2" cx="132" cy="176" r="7" fill="#cfc9f6"/>
+          <circle class="e-mark m3" cx="188" cy="172" r="7" fill="#cfc9f6"/>
+          <circle class="e-mark m4" cx="146" cy="120" r="6" fill="#afa9ec"/>
+          <circle class="e-mark m5" cx="174" cy="118" r="6" fill="#afa9ec"/>
+        </svg>
+        <span class="cap">develops over days</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">Concept 05</div>
+        <h2>Latent</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Develops like film — and you hold the developer.&rdquo;</p>
+        <p class="body">It arrives pale and blank. Over days, markings, colors, and even <em style="color:var(--ink);font-style:italic">which morph</em> it becomes bloom in — shaped by where you keep it. A sunny sill pushes a warm desert morph; a cold dark shelf, a pallid cave one. Same SKU, divergent outcomes.</p>
+        <dl class="spec">
+          <div><dt>Trigger</dt><dd>Days of light, air &amp; warmth</dd></div>
+          <div><dt>Reveal axis</dt><dd>Slow &amp; owner-authored</dd></div>
+          <div><dt>Keepsake</dt><dd>A creature no one else&rsquo;s is exactly like</dd></div>
+          <div><dt>Collection</dt><dd>Branching morphs from shared SKUs — nature vs nurture</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">Why it isn&rsquo;t the egg</span>
+          <p>The reveal lasts days and personalizes. Far past grow-in-water — this changes identity, not size.</p></div>
+        <p class="market"><b>Market angle:</b> deepest engagement &amp; UGC — &ldquo;watch mine develop&rdquo; is social-media native.</p>
+      </div>
+    </section>
+
+    <!-- 7 · SCORECARD -->
+    <section class="slide" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">The Read</div>
+        <h2 style="font-size:clamp(28px,4.6vw,56px)">How they stack up.</h2>
+        <div class="scorewrap">
+          <table class="score" id="scoreTable">
+            <thead><tr><th>Concept</th><th>Visual wow</th><th>Retention</th><th>Business</th><th>Feasibility</th></tr></thead>
+            <tbody><!-- filled by JS --></tbody>
+          </table>
+        </div>
+        <p class="scorenote"><b>Recommendation:</b> Lead the pitch with <b>Specimen</b> — it&rsquo;s the most arresting visual and reinforces the existing Deep Thaw lore. Pair it with <b>Symbiont</b> as the business engine (trading drives repeat buys) and <b>Latent</b> as the engagement story (a reveal that lasts days). Nocturne and Unfurl are strong but lean on harder tooling / R&amp;D.</p>
+      </div>
+    </section>
+
+    <!-- 8 · CLOSING -->
+    <section class="slide closing" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">Next Step</div>
+        <h1>Pick one.<br>I&rsquo;ll prototype it.</h1>
+        <div class="pickrow">
+          <div class="pick star"><div class="n">Specimen</div><div class="d">my pick — render-ready</div></div>
+          <div class="pick"><div class="n">Nocturne</div><div class="d">glow / ritual</div></div>
+          <div class="pick"><div class="n">Unfurl</div><div class="d">kinetic / fidget</div></div>
+          <div class="pick"><div class="n">Symbiont</div><div class="d">trading engine</div></div>
+          <div class="pick"><div class="n">Latent</div><div class="d">slow develop</div></div>
+        </div>
+        <p class="ask">Tell me which, and I&rsquo;ll build the four-state interactive render — same treatment as Tuft.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="navbar">
+    <button class="arrow" id="prev" aria-label="Previous"><svg viewBox="0 0 24 24"><polyline points="15 5 8 12 15 19"/></svg></button>
+    <button class="arrow" id="next" aria-label="Next"><svg viewBox="0 0 24 24"><polyline points="9 5 16 12 9 19"/></svg></button>
+    <div class="dots" id="dots"></div>
+    <div class="counter"><b id="cur">01</b> / <span id="tot">09</span></div>
+    <div class="khint">← → to navigate</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const deck   = document.getElementById('deck');
+  const slides = [...document.querySelectorAll('.slide')];
+  const dotsEl = document.getElementById('dots');
+  const curEl  = document.getElementById('cur');
+  const totEl  = document.getElementById('tot');
+  const prevB  = document.getElementById('prev');
+  const nextB  = document.getElementById('next');
+  let i = 0;
+
+  deck.classList.add('js');
+  totEl.textContent = String(slides.length).padStart(2,'0');
+
+  // build dots
+  slides.forEach((_, k) => {
+    const d = document.createElement('button');
+    d.className = 'dot' + (k===0?' on':'');
+    d.setAttribute('aria-label', 'Go to slide ' + (k+1));
+    d.addEventListener('click', () => go(k));
+    dotsEl.appendChild(d);
+  });
+  const dots = [...dotsEl.children];
+
+  function go(n){
+    i = Math.max(0, Math.min(slides.length-1, n));
+    slides.forEach((s,k) => s.classList.toggle('on', k===i));
+    dots.forEach((d,k) => d.classList.toggle('on', k===i));
+    curEl.textContent = String(i+1).padStart(2,'0');
+    prevB.disabled = i===0;
+    nextB.disabled = i===slides.length-1;
+  }
+  const next = () => go(i+1), prev = () => go(i-1);
+
+  prevB.addEventListener('click', prev);
+  nextB.addEventListener('click', next);
+  window.addEventListener('keydown', e => {
+    if (e.key==='ArrowRight' || e.key==='PageDown' || e.key===' '){ e.preventDefault(); next(); }
+    else if (e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); prev(); }
+    else if (e.key==='Home'){ go(0); }
+    else if (e.key==='End'){ go(slides.length-1); }
+    else if (e.key>='1' && e.key<='9'){ go(+e.key-1); }
+  });
+
+  // swipe (touch)
+  let sx=0;
+  document.getElementById('stage').addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+  document.getElementById('stage').addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-sx;
+    if (Math.abs(dx)>50){ dx<0 ? next() : prev(); }
+  },{passive:true});
+
+  // scorecard
+  const scores = [
+    {name:'Specimen', c:'#bfe3e8', v:5, r:3, b:3, f:3, lead:true},
+    {name:'Nocturne', c:'#c9a3ee', v:4, r:5, b:3, f:3},
+    {name:'Unfurl',   c:'#e6b45c', v:4, r:4, b:3, f:2},
+    {name:'Symbiont', c:'#7fd6c2', v:3, r:4, b:5, f:4, lead:true},
+    {name:'Latent',   c:'#b9a6f0', v:3, r:5, b:4, f:2, lead:true},
+  ];
+  const tbody = document.querySelector('#scoreTable tbody');
+  const pips = (val, color) => {
+    let h = '<div class="pips">';
+    for (let k=1;k<=5;k++) h += `<span class="pip ${k<=val?'f':''}" style="--pipc:${color}"></span>`;
+    return h + '</div>';
+  };
+  scores.forEach(s => {
+    const tr = document.createElement('tr');
+    if (s.lead) tr.className='lead';
+    tr.innerHTML =
+      `<th scope="row"><span class="swatch" style="background:${s.c}"></span>${s.name}</th>` +
+      `<td>${pips(s.v,s.c)}</td><td>${pips(s.r,s.c)}</td>` +
+      `<td>${pips(s.b,s.c)}</td><td>${pips(s.f,s.c)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  go(0);
+})();
+</script>
+</body>
+</html>
