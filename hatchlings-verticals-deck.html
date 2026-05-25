@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Chase, Applied — Five New Verticals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0d0b09; --bg2:#15110c;
+    --ink:#ece4d6; --dim:#8c8170; --faint:#5b5345;
+    --amber:#d4a24c; --amber-2:#f0c878;
+    --line:rgba(212,162,76,.22); --line-soft:rgba(233,225,211,.08);
+    --ease:cubic-bezier(.65,.02,.25,1);
+    --accent:#d4a24c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(120% 90% at 30% 18%, rgba(212,162,76,.10) 0%, rgba(212,162,76,.03) 30%, transparent 60%),radial-gradient(150% 130% at 50% 45%, var(--bg2) 0%, var(--bg) 64%)}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.04;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  .deck{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:baseline;justify-content:space-between;padding:clamp(14px,2.2vw,26px) clamp(20px,4vw,56px) 12px;border-bottom:1px solid var(--line-soft)}
+  .wordmark{font-family:"Fraunces",serif;font-weight:500;letter-spacing:.16em;text-transform:uppercase;font-size:clamp(15px,1.7vw,20px)}
+  .wordmark .dot{color:var(--amber)}
+  .deckmeta{font-size:10.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+
+  .stage{position:relative;flex:1;min-height:0}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(16px,3vh,40px) clamp(24px,6vw,90px);opacity:0;transform:translateY(14px);pointer-events:none;transition:opacity .6s var(--ease),transform .7s var(--ease);overflow-y:auto}
+  .deck:not(.js) .slide{position:static;opacity:1;transform:none;border-bottom:1px solid var(--line-soft)}
+  .slide.on{opacity:1;transform:none;pointer-events:auto}
+
+  .eyebrow{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--dim);margin-bottom:18px}
+  .eyebrow::before{content:"";width:30px;height:1px;background:var(--accent);opacity:.9}
+  .eyebrow .acc{color:var(--accent)}
+  h1{font-family:"Fraunces",serif;font-weight:500;letter-spacing:.005em;line-height:.98;margin:0}
+  h2{font-family:"Fraunces",serif;font-weight:500;line-height:1;margin:0}
+
+  .slide.on .stagger>*{animation:rise .65s var(--ease) both}
+  .slide.on .stagger>*:nth-child(2){animation-delay:.06s}.slide.on .stagger>*:nth-child(3){animation-delay:.12s}
+  .slide.on .stagger>*:nth-child(4){animation-delay:.18s}.slide.on .stagger>*:nth-child(5){animation-delay:.24s}.slide.on .stagger>*:nth-child(6){animation-delay:.30s}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  /* COVER */
+  .cover{align-items:flex-start}
+  .cover h1{font-size:clamp(46px,8.4vw,118px);max-width:14ch}
+  .cover .sub{font-size:clamp(16px,2.2vw,26px);color:var(--dim);max-width:34ch;margin-top:18px;font-weight:300}
+  .cover .foot{margin-top:auto;padding-top:28px;display:flex;gap:28px;flex-wrap:wrap;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--faint)}
+  .cover .foot b{color:var(--amber);font-weight:500}
+  .cover .ghost{position:absolute;right:clamp(24px,6vw,110px);top:50%;transform:translateY(-50%);width:min(28vw,300px);opacity:.5;pointer-events:none}
+
+  /* THESIS */
+  .lede-block{max-width:64ch}
+  .lede-block p{font-size:clamp(14px,1.55vw,18px);line-height:1.6;color:var(--dim);font-weight:300}
+  .lede-block em{font-style:italic;color:var(--ink)}
+  .proofrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:28px}
+  .proof{border-top:1px solid var(--line-soft);padding-top:13px}
+  .proof .n{font-family:"Fraunces",serif;font-size:clamp(20px,2.6vw,30px);color:var(--amber-2);line-height:1}
+  .proof .w{font-size:11px;letter-spacing:.04em;color:var(--ink);margin-top:8px;font-weight:500}
+  .proof .d{font-size:10.5px;line-height:1.4;color:var(--dim);margin-top:4px;font-weight:300}
+
+  /* CONCEPT */
+  .concept{display:grid;grid-template-columns:minmax(260px,38%) 1fr;gap:clamp(28px,5vw,76px);align-items:center}
+  .vis{position:relative;display:grid;place-items:center}
+  .vis svg{width:min(33vh,340px);height:auto;overflow:visible}
+  .vis .cap{position:absolute;bottom:-6px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint)}
+  .bignum{font-family:"Space Mono",monospace;font-size:clamp(12px,1.3vw,15px);letter-spacing:.2em;color:var(--accent)}
+  .kicker{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);margin-left:10px}
+  .concept h2{font-size:clamp(34px,5vw,72px);margin:6px 0 0}
+  .accentrule{width:54px;height:2px;background:var(--accent);margin:16px 0;opacity:.85}
+  .hook{font-family:"Fraunces",serif;font-style:italic;font-size:clamp(18px,2.3vw,28px);line-height:1.22;color:var(--ink);max-width:26ch}
+  .body{font-size:clamp(13px,1.4vw,16px);line-height:1.55;color:var(--dim);max-width:50ch;margin:15px 0 0;font-weight:300}
+  .body em{color:var(--ink);font-style:italic}
+  .spec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 30px;margin:20px 0 0;max-width:620px}
+  .spec div{padding:11px 0;border-top:1px solid var(--line-soft)}
+  .spec dt{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+  .spec dd{margin:0;font-size:13px;line-height:1.4;color:var(--ink);font-weight:300}
+  .spec dd b{color:var(--amber-2);font-weight:600;font-family:"Space Mono",monospace;font-size:12px}
+  .why{margin:20px 0 0;padding:13px 0 13px 18px;border-left:2px solid var(--accent);max-width:56ch}
+  .why .lbl{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px}
+  .why p{margin:0;font-family:"Fraunces",serif;font-style:italic;font-size:clamp(14px,1.55vw,18px);line-height:1.35}
+
+  /* PLATFORM */
+  .plat{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,64px);align-items:center}
+  .plat ul{list-style:none;margin:18px 0 0;padding:0}
+  .plat li{font-size:clamp(13px,1.5vw,17px);line-height:1.5;padding:11px 0 11px 26px;position:relative;border-bottom:1px solid var(--line-soft)}
+  .plat li::before{content:"\2192";position:absolute;left:0;color:var(--amber)}
+  .plat li b{color:var(--ink)}
+  .stackvis{display:flex;flex-direction:column;gap:10px}
+  .stackrow{display:flex;align-items:center;gap:14px;border:1px solid var(--line-soft);border-radius:10px;padding:12px 16px}
+  .stackrow .sw{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+  .stackrow .nm{font-family:"Fraunces",serif;font-size:16px;flex:1}
+  .stackrow .tag{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .engine{margin-top:14px;text-align:center;border:1px dashed var(--line);border-radius:10px;padding:14px;font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.1em;color:var(--amber-2)}
+
+  /* SCORECARD */
+  .scorewrap{margin-top:14px;overflow-x:auto}
+  table.score{border-collapse:collapse;width:100%;max-width:1060px}
+  table.score th,table.score td{text-align:left;padding:13px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  table.score thead th{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:500}
+  table.score tbody th{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(15px,1.9vw,21px)}
+  table.score tbody th .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:10px;vertical-align:middle}
+  .pips{display:flex;gap:4px}.pip{width:16px;height:5px;border-radius:1px;background:var(--line-soft)}.pip.f{background:var(--pipc,var(--amber))}
+  tr.lead{background:rgba(212,162,76,.05)}
+  .scorenote{margin-top:18px;font-size:13px;color:var(--dim);max-width:76ch;line-height:1.6;font-weight:300}
+  .scorenote b{color:var(--ink);font-weight:500}
+
+  /* CLOSING */
+  .closing{align-items:flex-start}
+  .closing h1{font-size:clamp(38px,7vw,92px);max-width:16ch}
+  .pickrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
+  .pick{border:1px solid var(--line-soft);border-radius:10px;padding:16px 20px;min-width:150px}
+  .pick .n{font-family:"Fraunces",serif;font-size:19px}
+  .pick .d{font-size:11px;color:var(--dim);margin-top:6px;letter-spacing:.04em}
+  .pick.star{border-color:var(--line);background:rgba(212,162,76,.06)}.pick.star .n{color:var(--amber-2)}
+  .closing .ask{margin-top:30px;font-family:"Fraunces",serif;font-style:italic;font-size:clamp(18px,2.4vw,28px);color:var(--ink)}
+
+  .navbar{display:flex;align-items:center;gap:18px;padding:12px clamp(20px,4vw,56px) clamp(14px,2vh,22px);border-top:1px solid var(--line-soft)}
+  .arrow{appearance:none;cursor:pointer;background:transparent;border:1px solid var(--line-soft);color:var(--ink);width:38px;height:38px;border-radius:999px;display:grid;place-items:center;transition:.3s ease}
+  .arrow:hover{border-color:var(--line);background:rgba(212,162,76,.08)}.arrow:disabled{opacity:.25;cursor:default}
+  .arrow svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.7;fill:none}
+  .dots{display:flex;gap:9px;flex:1;flex-wrap:wrap}
+  .dot{width:9px;height:9px;border-radius:999px;background:var(--line-soft);border:0;cursor:pointer;padding:0;transition:.3s}
+  .dot:hover{background:var(--dim)}.dot.on{background:var(--amber);box-shadow:0 0 8px rgba(212,162,76,.6);transform:scale(1.15)}
+  .counter{font-family:"Space Mono",monospace;font-size:13px;letter-spacing:.06em;color:var(--dim);white-space:nowrap}.counter b{color:var(--ink)}
+  .khint{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+
+  /* ===== emblem animations ===== */
+  @keyframes wisp{0%{opacity:0;transform:translateY(8px)}30%{opacity:.7}100%{opacity:0;transform:translateY(-44px)}}
+  .e-wisp{transform-box:fill-box;animation:wisp 3.2s ease-in infinite}
+  .e-wisp.w2{animation-delay:1s}.e-wisp.w3{animation-delay:2s}
+  @keyframes rpulse{0%,100%{opacity:.28}50%{opacity:.85}}
+  .e-rar{transform-box:fill-box;transform-origin:center;animation:rpulse 3.5s ease-in-out infinite}
+  @keyframes colorway{0%{fill:#8aa6d6}20%{fill:#d6a6c4}40%{fill:#8fd6a0}60%{fill:#e6c061}80%{fill:#c98fe0}100%{fill:#8aa6d6}}
+  .e-cloth{animation:colorway 4.2s steps(1,end) infinite}
+  @keyframes stamp{0%,76%{opacity:0;transform:scale(.85)}86%{opacity:1;transform:scale(1.04)}100%{opacity:0;transform:scale(1)}}
+  .e-stamp{transform-box:fill-box;transform-origin:center;animation:stamp 4.2s var(--ease) infinite}
+  @keyframes unroll{0%,100%{transform:scaleY(.14)}42%,76%{transform:scaleY(1)}}
+  .e-print{transform-box:fill-box;transform-origin:center bottom;animation:unroll 5s var(--ease) infinite}
+  @keyframes sealp{0%,100%{opacity:.4}50%{opacity:1}}
+  .e-seal{transform-box:fill-box;transform-origin:center;animation:sealp 3s ease-in-out infinite}
+  @keyframes gloss{0%{transform:translateX(-66px)}55%,100%{transform:translateX(74px)}}
+  .e-gloss{animation:gloss 3s ease-in-out infinite}
+  @keyframes capglow{0%,100%{opacity:.25}50%{opacity:.85}}
+  .e-capglow{transform-box:fill-box;transform-origin:center;animation:capglow 3s ease-in-out infinite}
+  @keyframes score{0%{stroke-dashoffset:100}12%{stroke-dashoffset:100}64%,100%{stroke-dashoffset:18}}
+  .e-score{animation:score 4s var(--ease) infinite}
+  @keyframes num92{0%,18%{opacity:0}40%,100%{opacity:1}}
+  .e-92{animation:num92 4s var(--ease) infinite}
+
+  @media (max-width:880px){
+    .concept,.plat{grid-template-columns:1fr;gap:22px}
+    .spec{grid-template-columns:1fr}.proofrow{grid-template-columns:1fr 1fr}
+    .cover .ghost{display:none}.khint{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+  <div class="topbar">
+    <div class="wordmark">Hatchlings<span class="dot"> · </span></div>
+    <div class="deckmeta">New Verticals &nbsp;/&nbsp; The Chase, Applied</div>
+  </div>
+
+  <div class="stage" id="stage">
+
+    <!-- 0 · COVER -->
+    <section class="slide cover on" style="--accent:#d4a24c">
+      <svg class="ghost" viewBox="0 0 200 260" aria-hidden="true">
+        <g opacity=".5">
+          <rect x="40" y="40" width="120" height="26" rx="5" fill="#46402f"/>
+          <rect x="52" y="80" width="96" height="26" rx="5" fill="#46402f"/>
+          <rect x="64" y="120" width="72" height="26" rx="5" fill="#5a5240"/>
+          <circle cx="100" cy="184" r="34" fill="none" stroke="#d4a24c" stroke-width="2"/>
+          <text x="100" y="190" text-anchor="middle" font-family="Space Mono,monospace" font-size="16" fill="#e6c061">1/1</text>
+        </g>
+      </svg>
+      <div class="stagger">
+        <div class="eyebrow"><span class="acc">Portfolio Study</span> &nbsp;·&nbsp; Beyond the Creature</div>
+        <h1>The chase travels.</h1>
+        <p class="sub">The collecting mechanic isn&rsquo;t about creatures. It&rsquo;s a system — and it works in any category kidults already obsess over.</p>
+      </div>
+      <div class="foot">
+        <span>Prepared for <b>Tyler</b></span>
+        <span>Same engine · five new shelves</span>
+        <span><b>5</b> completely different products</span>
+      </div>
+    </section>
+
+    <!-- 1 · THESIS -->
+    <section class="slide" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">The Travelling Mechanic</div>
+        <h2 style="font-size:clamp(28px,4.6vw,58px);max-width:20ch">The engine is category-agnostic.</h2>
+        <div class="lede-block">
+          <p>Rarity tiers, the grail, set-completion, the flex, resale value — that loop doesn&rsquo;t care what&rsquo;s inside the box. It already runs, quietly, in five categories <em>kidults pour money into</em>. We don&rsquo;t need to invent the desire. We need to bring the system, the authentication, and the honest odds. Here&rsquo;s where the chase already lives:</p>
+        </div>
+        <div class="proofrow">
+          <div class="proof"><div class="n">$10B+</div><div class="w">Sneakers &amp; fashion</div><div class="d">A resale economy built entirely on scarcity drops.</div></div>
+          <div class="proof"><div class="n">5–10×</div><div class="w">Discontinued perfume</div><div class="d">Vintage bottles &amp; a thriving decant market.</div></div>
+          <div class="proof"><div class="n">$1,000+</div><div class="w">Artisan keycaps</div><div class="d">Blind drops &amp; raffles are already the norm.</div></div>
+          <div class="proof"><div class="n">3–10×</div><div class="w">Print drops</div><div class="d">Sell out in minutes, flip on the secondary.</div></div>
+          <div class="proof"><div class="n">$1,000/lb</div><div class="w">Auction coffee</div><div class="d">Geisha lots chased like fine wine.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · FRAGRANCE -->
+    <section class="slide concept" style="--accent:#d6a6c4">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Fragrance emblem">
+          <defs>
+            <radialGradient id="frag-glow" cx="50%" cy="55%" r="55%"><stop offset="0" stop-color="#f0cfe2" stop-opacity=".8"/><stop offset="60%" stop-color="#d6a6c4" stop-opacity=".3"/><stop offset="100%" stop-color="#d6a6c4" stop-opacity="0"/></radialGradient>
+            <linearGradient id="frag-liq" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8c6dc" stop-opacity=".5"/><stop offset="55%" stop-color="#c98fb4" stop-opacity=".7"/><stop offset="100%" stop-color="#9a6f90" stop-opacity=".8"/></linearGradient>
+          </defs>
+          <ellipse cx="160" cy="298" rx="78" ry="12" fill="#000" opacity=".4"/>
+          <circle class="e-rar" cx="160" cy="190" r="86" fill="url(#frag-glow)"/>
+          <!-- wisps -->
+          <path class="e-wisp w1" d="M150 116 C142 104 158 96 150 84" fill="none" stroke="#e8c6dc" stroke-width="3" stroke-linecap="round"/>
+          <path class="e-wisp w2" d="M170 116 C178 104 162 96 170 84" fill="none" stroke="#e8c6dc" stroke-width="3" stroke-linecap="round"/>
+          <path class="e-wisp w3" d="M160 112 C152 100 168 92 160 80" fill="none" stroke="#e8c6dc" stroke-width="3" stroke-linecap="round"/>
+          <!-- cap -->
+          <rect x="142" y="120" width="36" height="24" rx="4" fill="#2a2420"/>
+          <rect x="150" y="140" width="20" height="14" fill="#3a332b"/>
+          <!-- bottle -->
+          <rect x="120" y="152" width="80" height="116" rx="14" fill="#1e1a16" stroke="#5a5240" stroke-opacity=".5"/>
+          <rect x="120" y="196" width="80" height="72" rx="14" fill="url(#frag-liq)"/>
+          <rect x="120" y="152" width="80" height="116" rx="14" fill="none" stroke="#d6a6c4" stroke-opacity=".4" stroke-width="1.5"/>
+          <!-- serial tag -->
+          <line x1="200" y1="160" x2="222" y2="172" stroke="#5a5240" stroke-width="1.5"/>
+          <rect x="214" y="170" width="44" height="26" rx="4" fill="#241f18" stroke="#d6a6c4" stroke-opacity=".4"/>
+          <text x="236" y="187" text-anchor="middle" font-family="Space Mono,monospace" font-size="11" fill="#e6b8d4">Nº07</text>
+        </svg>
+        <span class="cap">smell it to discover it</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">VERTICAL 01<span class="kicker">Fragrance</span></div>
+        <h2>Blind Accord</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;You can&rsquo;t smell it before you buy it.&rdquo;</p>
+        <p class="body">A perfumer releases numbered series; each sealed flacon is a blind pull across a rarity spread — house accords, <em>rare limited macerations</em>, and a single 1/1 &ldquo;Perfumer&rsquo;s Reserve&rdquo; batch. Serial-etched glass. Build a fragrance wardrobe; layer them; trade the discontinued ones.</p>
+        <dl class="spec">
+          <div><dt>The pull</dt><dd>The reveal is olfactory — you wear it to find out who you got</dd></div>
+          <div><dt>Tiers</dt><dd>Accord <b>common</b> · Maceration <b>1:20</b> · Reserve <b>1/1</b></dd></div>
+          <div><dt>Why it sells</dt><dd>~80% margins, deeply emotional, infinitely re-collectable</dd></div>
+          <div><dt>Proof</dt><dd>Discontinued scents resell <b>5–10×</b>; decant culture is huge</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>A scent you love but can never buy again is the purest grail there is.</p></div>
+      </div>
+    </section>
+
+    <!-- 3 · APPAREL -->
+    <section class="slide concept" style="--accent:#8aa6d6">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Apparel emblem">
+          <defs><radialGradient id="ap-glow" cx="50%" cy="48%" r="55%"><stop offset="0" stop-color="#c6d4f0" stop-opacity=".55"/><stop offset="60%" stop-color="#8aa6d6" stop-opacity=".22"/><stop offset="100%" stop-color="#8aa6d6" stop-opacity="0"/></radialGradient></defs>
+          <ellipse cx="160" cy="300" rx="82" ry="12" fill="#000" opacity=".4"/>
+          <circle class="e-rar" cx="160" cy="180" r="92" fill="url(#ap-glow)"/>
+          <!-- tee -->
+          <path class="e-cloth" d="M120 120 L150 104 C156 114 164 114 170 104 L200 120 L226 156 L202 178 L202 268 L118 268 L118 178 L94 156 Z" stroke="#3a4a6a" stroke-opacity=".5"/>
+          <!-- collar -->
+          <path d="M150 104 C156 116 164 116 170 104" fill="none" stroke="#2a3550" stroke-width="3"/>
+          <!-- woven edition tag -->
+          <rect x="138" y="232" width="44" height="20" rx="3" fill="#16120e" opacity=".82"/>
+          <text x="160" y="246" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#cdd9f2">#0042</text>
+          <!-- stamp -->
+          <g class="e-stamp"><rect x="116" y="140" width="88" height="26" rx="5" fill="none" stroke="#acc2ec" stroke-width="2"/><text x="160" y="158" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="12" fill="#cdd9f2">RARE DYE</text></g>
+        </svg>
+        <span class="cap">size guaranteed · edition unknown</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">VERTICAL 02<span class="kicker">Apparel</span></div>
+        <h2>Blind Editions</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Your size is guaranteed. The edition isn&rsquo;t.&rdquo;</p>
+        <p class="body">You choose your fit; the colorway, print and dye are the blind pull — house colors common, seasonal prints rare, hand-dyed <em>1/1 grails</em>. A woven, numbered tag authenticates each. Removing the fit-gamble kills the one reason blind apparel normally fails — only the aesthetic is left to chance.</p>
+        <dl class="spec">
+          <div><dt>The pull</dt><dd>Variable reward with the return-risk engineered out</dd></div>
+          <div><dt>Tiers</dt><dd>House <b>common</b> · Seasonal print <b>1:10</b> · Hand-dyed <b>1/1</b></dd></div>
+          <div><dt>Why it sells</dt><dd>Streetwear already lives on scarcity, hype &amp; resale</dd></div>
+          <div><dt>Proof</dt><dd>Sneaker resale alone is a <b>$10B+</b> market</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>You&rsquo;d never gamble on a size. You&rsquo;ll happily gamble on a colorway.</p></div>
+      </div>
+    </section>
+
+    <!-- 4 · ART PRINTS -->
+    <section class="slide concept" style="--accent:#d8c79a">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Art print emblem">
+          <defs>
+            <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#efe6cf"/><stop offset="100%" stop-color="#d8c79a"/></linearGradient>
+            <radialGradient id="pr-glow" cx="50%" cy="46%" r="55%"><stop offset="0" stop-color="#f0e6c6" stop-opacity=".5"/><stop offset="100%" stop-color="#d8c79a" stop-opacity="0"/></radialGradient>
+          </defs>
+          <ellipse cx="160" cy="300" rx="80" ry="12" fill="#000" opacity=".4"/>
+          <circle class="e-rar" cx="160" cy="170" r="88" fill="url(#pr-glow)"/>
+          <!-- unrolling print -->
+          <g class="e-print">
+            <rect x="96" y="92" width="128" height="148" rx="3" fill="url(#paper)"/>
+            <circle cx="138" cy="150" r="26" fill="#c98f6a" opacity=".85"/>
+            <rect x="150" y="130" width="48" height="60" rx="4" fill="#6a7e8c" opacity=".8"/>
+            <path d="M104 214 L140 178 L168 204 L216 160" fill="none" stroke="#3a3024" stroke-width="3"/>
+          </g>
+          <!-- dowel / rolled base -->
+          <rect x="90" y="236" width="140" height="16" rx="8" fill="#2e2618"/>
+          <!-- emboss seal -->
+          <g class="e-seal"><circle cx="206" cy="226" r="18" fill="none" stroke="#d8c79a" stroke-width="2"/><text x="206" y="231" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="11" fill="#efe6cf">AP</text></g>
+        </svg>
+        <span class="cap">unroll to find what you own</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">VERTICAL 03<span class="kicker">Art &amp; Prints</span></div>
+        <h2>The Edition Lottery</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Unroll it to find out what you own.&rdquo;</p>
+        <p class="body">Sealed limited prints where you don&rsquo;t know the work, state or colorway you&rsquo;ll receive. Tiers run open edition → numbered limited → <em>artist proof</em> → the 1/1 hand-finished original. An embossed COA is the serial. Collect a wall; proofs appreciate and trade.</p>
+        <dl class="spec">
+          <div><dt>The pull</dt><dd>The unrolling reveal; the dream of pulling the proof</dd></div>
+          <div><dt>Tiers</dt><dd>Open · Limited <b>/100</b> · Artist Proof <b>1:50</b> · Original <b>1/1</b></dd></div>
+          <div><dt>Why it sells</dt><dd>Wall-worthy, high-margin, with built-in COA authentication</dd></div>
+          <div><dt>Proof</dt><dd>Hyped print drops resell <b>3–10×</b> within hours</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>It&rsquo;s the only collectible that doubles as the décor you show off daily.</p></div>
+      </div>
+    </section>
+
+    <!-- 5 · DESK ARTISAN -->
+    <section class="slide concept" style="--accent:#7fd6c2">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Artisan keycap emblem">
+          <defs>
+            <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd6c2"/><stop offset="100%" stop-color="#3a8a7a"/></linearGradient>
+            <linearGradient id="cap-gloss" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="50%" stop-color="#fff" stop-opacity=".7"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient>
+            <radialGradient id="cap-glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#bff3e7" stop-opacity=".7"/><stop offset="60%" stop-color="#7fd6c2" stop-opacity=".25"/><stop offset="100%" stop-color="#7fd6c2" stop-opacity="0"/></radialGradient>
+            <clipPath id="capclip"><path d="M112 158 L140 134 L200 134 L228 158 L210 206 L130 206 Z"/></clipPath>
+          </defs>
+          <ellipse cx="170" cy="300" rx="74" ry="12" fill="#000" opacity=".4"/>
+          <circle class="e-capglow" cx="170" cy="168" r="86" fill="url(#cap-glow)"/>
+          <!-- switch stem -->
+          <rect x="158" y="206" width="24" height="34" rx="3" fill="#241f18"/>
+          <rect x="164" y="214" width="4" height="16" fill="#3a332b"/><rect x="172" y="214" width="4" height="16" fill="#3a332b"/>
+          <!-- keycap body + sculpted top -->
+          <path d="M112 158 L140 134 L200 134 L228 158 L210 206 L130 206 Z" fill="url(#cap)" stroke="#2e6a5e" stroke-opacity=".5"/>
+          <path d="M140 134 L200 134 L186 150 L154 150 Z" fill="#bff3e7" opacity=".5"/>
+          <!-- little sculpted detail -->
+          <circle cx="170" cy="176" r="13" fill="#2e6a5e" opacity=".55"/>
+          <circle cx="165" cy="172" r="3.5" fill="#eafff8"/>
+          <!-- gloss sweep -->
+          <g clip-path="url(#capclip)"><rect class="e-gloss" x="100" y="130" width="34" height="84" fill="url(#cap-gloss)"/></g>
+          <!-- rarity tag -->
+          <text x="170" y="262" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="12" fill="#aef0e2">1 / 30</text>
+        </svg>
+        <span class="cap">the desk-flex economy</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">VERTICAL 04<span class="kicker">Desk &amp; EDC</span></div>
+        <h2>Blind Artisan</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;This economy already runs on the chase.&rdquo;</p>
+        <p class="body">Blind drops of hand-sculpted desk objects — keycaps, dice, pen finials, EDC fidgets — across rarity tiers: colorways common, sculpts rare, <em>1/1 &ldquo;fauxtisan&rdquo; grails</em>. Numbered and signed. The enthusiast communities already trade these rabidly; we bring a real brand and fair odds.</p>
+        <dl class="spec">
+          <div><dt>The pull</dt><dd>A tiny, jewel-like object you flex on your desk daily</dd></div>
+          <div><dt>Tiers</dt><dd>Colorway <b>common</b> · Sculpt <b>1:24</b> · Fauxtisan <b>1/1</b></dd></div>
+          <div><dt>Why it sells</dt><dd>Devoted communities, high margins, endless variants</dd></div>
+          <div><dt>Proof</dt><dd>Single artisan keycaps have sold for <b>$1,000+</b></dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>We&rsquo;re not creating a chase here — we&rsquo;re professionalising one that already exists.</p></div>
+      </div>
+    </section>
+
+    <!-- 6 · COFFEE -->
+    <section class="slide concept" style="--accent:#c79a6a">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Coffee emblem">
+          <defs><radialGradient id="cof-glow" cx="50%" cy="42%" r="55%"><stop offset="0" stop-color="#e6c6a0" stop-opacity=".5"/><stop offset="100%" stop-color="#c79a6a" stop-opacity="0"/></radialGradient></defs>
+          <ellipse cx="160" cy="302" rx="76" ry="12" fill="#000" opacity=".4"/>
+          <circle class="e-rar" cx="160" cy="150" r="80" fill="url(#cof-glow)"/>
+          <!-- gauge -->
+          <path d="M96 168 A64 64 0 0 1 224 168" fill="none" stroke="#3a332b" stroke-width="8" stroke-linecap="round"/>
+          <path class="e-score" pathLength="100" d="M96 168 A64 64 0 0 1 224 168" fill="none" stroke="#c79a6a" stroke-width="8" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="18"/>
+          <text class="e-92" x="160" y="150" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="34" fill="#e6c6a0">92</text>
+          <text x="160" y="178" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#9a8c70">CUPPING SCORE</text>
+          <!-- steam -->
+          <path class="e-wisp w1" d="M146 218 C138 206 154 198 146 186" fill="none" stroke="#cbb89a" stroke-width="3" stroke-linecap="round"/>
+          <path class="e-wisp w3" d="M174 218 C182 206 166 198 174 186" fill="none" stroke="#cbb89a" stroke-width="3" stroke-linecap="round"/>
+          <!-- cup -->
+          <path d="M120 224 L200 224 L192 270 C190 280 182 286 170 286 L150 286 C138 286 130 280 128 270 Z" fill="#2a211a" stroke="#5a4a38" stroke-opacity=".5"/>
+          <ellipse cx="160" cy="224" rx="40" ry="9" fill="#1a130d"/>
+          <ellipse cx="160" cy="224" rx="40" ry="9" fill="none" stroke="#c79a6a" stroke-opacity=".4" stroke-width="1.5"/>
+        </svg>
+        <span class="cap">every bag 88+ · chase the 92</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">VERTICAL 05<span class="kicker">Coffee &amp; Tea</span></div>
+        <h2>The Cupping Lottery</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Every bag scores 88+. The chase is the 92.&rdquo;</p>
+        <p class="body">Monthly sealed micro-lots; you don&rsquo;t know the origin or varietal until you brew. Rarity is the cupping score and the scarcity — common washed lots, rare naturals and varietals, and a 1/1 <em>auction lot</em> (Best-of-Panama geisha tier). Collect the origin map; trade the rare bags.</p>
+        <dl class="spec">
+          <div><dt>The pull</dt><dd>It&rsquo;s consumable — the gamble comes back every single month</dd></div>
+          <div><dt>Tiers</dt><dd>Washed <b>common</b> · Varietal <b>1:12</b> · Auction lot <b>1/1</b></dd></div>
+          <div><dt>Why it sells</dt><dd>Recurring revenue + frequent, low-stakes dopamine</dd></div>
+          <div><dt>Proof</dt><dd>Geisha auction lots have cleared <b>$1,000+/lb</b></dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>A consumable you re-buy is the only collectible with a built-in monthly heartbeat.</p></div>
+      </div>
+    </section>
+
+    <!-- 7 · PLATFORM -->
+    <section class="slide plat" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">The Real Business</div>
+        <h2 style="font-size:clamp(26px,4.4vw,52px)">One engine. Five shelves.</h2>
+        <ul>
+          <li>A reusable <b>rarity engine</b> — tiers, pity timers, published odds</li>
+          <li><b>Serial authentication</b> — a coin, a tag, a COA, an etch</li>
+          <li>A <b>trading marketplace</b> that takes a cut of every resale</li>
+          <li>One <b>collector account</b> that follows the buyer across categories</li>
+        </ul>
+        <p class="body" style="max-width:46ch">Build the chase infrastructure once, plug in any vertical. We stop being a perfume company or a coffee company — we become <em>the chase company</em>, and every shelf cross-sells the same collector.</p>
+      </div>
+      <div class="stagger">
+        <div class="stackvis">
+          <div class="stackrow"><span class="sw" style="background:#d6a6c4"></span><span class="nm">Blind Accord</span><span class="tag">Fragrance</span></div>
+          <div class="stackrow"><span class="sw" style="background:#8aa6d6"></span><span class="nm">Blind Editions</span><span class="tag">Apparel</span></div>
+          <div class="stackrow"><span class="sw" style="background:#d8c79a"></span><span class="nm">Edition Lottery</span><span class="tag">Prints</span></div>
+          <div class="stackrow"><span class="sw" style="background:#7fd6c2"></span><span class="nm">Blind Artisan</span><span class="tag">Desk / EDC</span></div>
+          <div class="stackrow"><span class="sw" style="background:#c79a6a"></span><span class="nm">Cupping Lottery</span><span class="tag">Coffee</span></div>
+          <div class="engine">↳ ONE RARITY + AUTH + TRADING ENGINE</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 · SCORECARD -->
+    <section class="slide" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">The Read</div>
+        <h2 style="font-size:clamp(26px,4.4vw,52px)">How they stack up.</h2>
+        <div class="scorewrap">
+          <table class="score" id="scoreTable">
+            <thead><tr><th>Vertical</th><th>Desire</th><th>Repeat buy</th><th>Resale &amp; status</th><th>Margin</th><th>Feasibility</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="scorenote"><b>Recommendation.</b> Start with <b>Blind Artisan</b> — the chase, the community and the resale market already exist, so it&rsquo;s the fastest proof. Run <b>The Cupping Lottery</b> alongside it for recurring revenue and a monthly dopamine cadence, and let <b>Blind Accord</b> be the high-margin halo that makes the brand feel luxury. Apparel and Prints slot in once the trading engine is live.</p>
+      </div>
+    </section>
+
+    <!-- 9 · CLOSING -->
+    <section class="slide closing" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">Next Step</div>
+        <h1>Same engine.<br>Pick the first shelf.</h1>
+        <div class="pickrow">
+          <div class="pick star"><div class="n">Blind Artisan</div><div class="d">fastest proof</div></div>
+          <div class="pick star"><div class="n">Cupping Lottery</div><div class="d">recurring revenue</div></div>
+          <div class="pick star"><div class="n">Blind Accord</div><div class="d">luxury halo</div></div>
+          <div class="pick"><div class="n">Blind Editions</div><div class="d">apparel</div></div>
+          <div class="pick"><div class="n">Edition Lottery</div><div class="d">prints</div></div>
+        </div>
+        <p class="ask">Tell me which to build out — a product render, an unboxing flow, or a one-page model for the platform.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="navbar">
+    <button class="arrow" id="prev" aria-label="Previous"><svg viewBox="0 0 24 24"><polyline points="15 5 8 12 15 19"/></svg></button>
+    <button class="arrow" id="next" aria-label="Next"><svg viewBox="0 0 24 24"><polyline points="9 5 16 12 9 19"/></svg></button>
+    <div class="dots" id="dots"></div>
+    <div class="counter"><b id="cur">01</b> / <span id="tot">10</span></div>
+    <div class="khint">← → to navigate</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const deck=document.getElementById('deck'), slides=[...document.querySelectorAll('.slide')];
+  const dotsEl=document.getElementById('dots'), curEl=document.getElementById('cur'), totEl=document.getElementById('tot');
+  const prevB=document.getElementById('prev'), nextB=document.getElementById('next');
+  let i=0;
+  deck.classList.add('js');
+  totEl.textContent=String(slides.length).padStart(2,'0');
+  slides.forEach((_,k)=>{const d=document.createElement('button');d.className='dot'+(k===0?' on':'');
+    d.setAttribute('aria-label','Slide '+(k+1));d.addEventListener('click',()=>go(k));dotsEl.appendChild(d);});
+  const dots=[...dotsEl.children];
+  function go(n){i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('on',k===i));
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    curEl.textContent=String(i+1).padStart(2,'0');
+    prevB.disabled=i===0;nextB.disabled=i===slides.length-1;}
+  const next=()=>go(i+1),prev=()=>go(i-1);
+  prevB.addEventListener('click',prev);nextB.addEventListener('click',next);
+  window.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='Home'){go(0);}else if(e.key==='End'){go(slides.length-1);}
+    else if(e.key>='1'&&e.key<='9'){go(+e.key-1);}});
+  let sx=0;const stage=document.getElementById('stage');
+  stage.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+  stage.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50){dx<0?next():prev();}},{passive:true});
+
+  const scores=[
+    {name:'Blind Artisan',  c:'#7fd6c2', de:5, rp:4, rs:5, mg:4, fe:3, lead:true},
+    {name:'Cupping Lottery', c:'#c79a6a', de:4, rp:5, rs:3, mg:4, fe:5, lead:true},
+    {name:'Blind Accord',   c:'#d6a6c4', de:5, rp:3, rs:4, mg:5, fe:4, lead:true},
+    {name:'Blind Editions', c:'#8aa6d6', de:4, rp:4, rs:5, mg:3, fe:3},
+    {name:'Edition Lottery', c:'#d8c79a', de:4, rp:3, rs:5, mg:4, fe:4},
+  ];
+  const tbody=document.querySelector('#scoreTable tbody');
+  const pips=(v,c)=>{let h='<div class="pips">';for(let k=1;k<=5;k++)h+=`<span class="pip ${k<=v?'f':''}" style="--pipc:${c}"></span>`;return h+'</div>';};
+  scores.forEach(s=>{const tr=document.createElement('tr');if(s.lead)tr.className='lead';
+    tr.innerHTML=`<th scope="row"><span class="swatch" style="background:${s.c}"></span>${s.name}</th>`+
+      `<td>${pips(s.de,s.c)}</td><td>${pips(s.rp,s.c)}</td><td>${pips(s.rs,s.c)}</td><td>${pips(s.mg,s.c)}</td><td>${pips(s.fe,s.c)}</td>`;
+    tbody.appendChild(tr);});
+  go(0);
+})();
+</script>
+</body>
+</html>
