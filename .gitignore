@@ -2,5 +2,8 @@ node_modules/
 package.json
 package-lock.json
 shot.js
+probe.js
 state-*.png
 deck-*.png
+pull-*.png
+probe-*.png

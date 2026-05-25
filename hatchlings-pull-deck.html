@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hatchlings — The Pull · Five Mechanics for the Chase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0d0b09; --bg2:#15110c;
+    --ink:#ece4d6; --dim:#8c8170; --faint:#5b5345;
+    --amber:#d4a24c; --amber-2:#f0c878;
+    --line:rgba(212,162,76,.22); --line-soft:rgba(233,225,211,.08);
+    --ease:cubic-bezier(.65,.02,.25,1);
+    --accent:#d4a24c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+  body::before{content:"";position:fixed;inset:0;z-index:0;
+    background:
+      radial-gradient(120% 90% at 30% 18%, rgba(212,162,76,.10) 0%, rgba(212,162,76,.03) 30%, transparent 60%),
+      radial-gradient(150% 130% at 50% 45%, var(--bg2) 0%, var(--bg) 64%)}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  .lib{position:absolute;width:0;height:0;overflow:hidden}
+  .deck{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+
+  .topbar{display:flex;align-items:baseline;justify-content:space-between;
+    padding:clamp(14px,2.2vw,26px) clamp(20px,4vw,56px) 12px;border-bottom:1px solid var(--line-soft)}
+  .wordmark{font-family:"Fraunces",serif;font-weight:500;letter-spacing:.16em;text-transform:uppercase;font-size:clamp(15px,1.7vw,20px)}
+  .wordmark .dot{color:var(--amber)}
+  .deckmeta{font-size:10.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+
+  .stage{position:relative;flex:1;min-height:0}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(16px,3vh,40px) clamp(24px,6vw,90px);
+    opacity:0;transform:translateY(14px);pointer-events:none;
+    transition:opacity .6s var(--ease),transform .7s var(--ease);overflow-y:auto}
+  .deck:not(.js) .slide{position:static;opacity:1;transform:none;border-bottom:1px solid var(--line-soft)}
+  .slide.on{opacity:1;transform:none;pointer-events:auto}
+
+  .eyebrow{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--dim);margin-bottom:18px}
+  .eyebrow::before{content:"";width:30px;height:1px;background:var(--accent);opacity:.9}
+  .eyebrow .acc{color:var(--accent)}
+
+  h1{font-family:"Fraunces",serif;font-weight:500;letter-spacing:.005em;line-height:.98;margin:0}
+  h2{font-family:"Fraunces",serif;font-weight:500;line-height:1;margin:0}
+
+  .slide.on .stagger>*{animation:rise .65s var(--ease) both}
+  .slide.on .stagger>*:nth-child(2){animation-delay:.06s}
+  .slide.on .stagger>*:nth-child(3){animation-delay:.12s}
+  .slide.on .stagger>*:nth-child(4){animation-delay:.18s}
+  .slide.on .stagger>*:nth-child(5){animation-delay:.24s}
+  .slide.on .stagger>*:nth-child(6){animation-delay:.30s}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  /* COVER */
+  .cover{align-items:flex-start}
+  .cover h1{font-size:clamp(54px,11vw,150px)}
+  .cover .sub{font-size:clamp(16px,2.2vw,26px);color:var(--dim);max-width:32ch;margin-top:18px;font-weight:300}
+  .cover .foot{margin-top:auto;padding-top:28px;display:flex;gap:28px;flex-wrap:wrap;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--faint)}
+  .cover .foot b{color:var(--amber);font-weight:500}
+  .cover .ghost{position:absolute;right:clamp(24px,6vw,120px);top:50%;transform:translateY(-50%);width:min(34vw,400px);opacity:.14;color:#8079d8;pointer-events:none}
+  .cover .ghost .glyphFloat{animation:floaty 9s ease-in-out infinite}
+  @keyframes floaty{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}
+
+  /* THESIS */
+  .lede-block{max-width:62ch}
+  .lede-block p{font-size:clamp(14px,1.55vw,18px);line-height:1.6;color:var(--dim);font-weight:300}
+  .lede-block em{font-style:italic;color:var(--ink)}
+  .levers{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:26px}
+  .lever{border-top:1px solid var(--line-soft);padding-top:12px}
+  .lever .k{font-family:"Space Mono",monospace;font-size:12px;color:var(--amber);margin-bottom:8px}
+  .lever .t{font-size:12.5px;line-height:1.4;color:var(--ink)}
+  .lever .d{font-size:11px;line-height:1.45;color:var(--dim);margin-top:5px;font-weight:300}
+  .stat-row{display:flex;gap:30px;flex-wrap:wrap;margin-top:24px}
+  .stat .n{font-family:"Fraunces",serif;font-size:clamp(22px,3vw,34px);color:var(--amber-2)}
+  .stat .l{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+
+  /* CONCEPT */
+  .concept{display:grid;grid-template-columns:minmax(260px,38%) 1fr;gap:clamp(28px,5vw,76px);align-items:center}
+  .vis{position:relative;display:grid;place-items:center}
+  .vis svg{width:min(34vh,360px);height:auto;overflow:visible}
+  .vis .cap{position:absolute;bottom:-6px;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--faint)}
+  .bignum{font-family:"Space Mono",monospace;font-size:clamp(12px,1.3vw,15px);letter-spacing:.2em;color:var(--accent)}
+  .concept h2{font-size:clamp(38px,5.6vw,80px);margin:6px 0 0}
+  .accentrule{width:54px;height:2px;background:var(--accent);margin:18px 0;opacity:.85}
+  .hook{font-family:"Fraunces",serif;font-style:italic;font-size:clamp(18px,2.4vw,30px);line-height:1.22;color:var(--ink);max-width:24ch}
+  .body{font-size:clamp(13px,1.45vw,16.5px);line-height:1.55;color:var(--dim);max-width:48ch;margin:16px 0 0;font-weight:300}
+  .body em{color:var(--ink);font-style:italic}
+
+  .spec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 30px;margin:22px 0 0;max-width:600px}
+  .spec div{padding:11px 0;border-top:1px solid var(--line-soft)}
+  .spec dt{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+  .spec dd{margin:0;font-size:13.5px;line-height:1.4;color:var(--ink);font-weight:300}
+  .spec dd b{color:var(--amber-2);font-weight:600;font-family:"Space Mono",monospace;font-size:12.5px}
+
+  .why{margin:22px 0 0;padding:13px 0 13px 18px;border-left:2px solid var(--accent);max-width:54ch}
+  .why .lbl{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px}
+  .why p{margin:0;font-family:"Fraunces",serif;font-style:italic;font-size:clamp(14px,1.6vw,18px);line-height:1.35}
+
+  /* PLAY FAIR */
+  .fair{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,64px);align-items:center}
+  .fair ul{list-style:none;margin:18px 0 0;padding:0}
+  .fair li{font-size:clamp(13px,1.5vw,17px);line-height:1.5;padding:11px 0 11px 26px;position:relative;border-bottom:1px solid var(--line-soft)}
+  .fair li::before{content:"\2713";position:absolute;left:0;color:#9fd6a8}
+  .fair li b{color:var(--ink)}
+
+  /* SCORECARD */
+  .scorewrap{margin-top:14px;overflow-x:auto}
+  table.score{border-collapse:collapse;width:100%;max-width:1040px}
+  table.score th,table.score td{text-align:left;padding:13px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  table.score thead th{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:500}
+  table.score tbody th{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(15px,1.9vw,21px)}
+  table.score tbody th .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:10px;vertical-align:middle}
+  .pips{display:flex;gap:4px}
+  .pip{width:16px;height:5px;border-radius:1px;background:var(--line-soft)}
+  .pip.f{background:var(--pipc,var(--amber))}
+  tr.lead{background:rgba(212,162,76,.05)}
+  .scorenote{margin-top:18px;font-size:13px;color:var(--dim);max-width:74ch;line-height:1.6;font-weight:300}
+  .scorenote b{color:var(--ink);font-weight:500}
+
+  /* CLOSING */
+  .closing{align-items:flex-start}
+  .closing h1{font-size:clamp(38px,7vw,92px);max-width:18ch}
+  .pickrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
+  .pick{border:1px solid var(--line-soft);border-radius:10px;padding:16px 20px;min-width:150px}
+  .pick .n{font-family:"Fraunces",serif;font-size:20px}
+  .pick .d{font-size:11px;color:var(--dim);margin-top:6px;letter-spacing:.04em}
+  .pick.star{border-color:var(--line);background:rgba(212,162,76,.06)}
+  .pick.star .n{color:var(--amber-2)}
+  .closing .ask{margin-top:30px;font-family:"Fraunces",serif;font-style:italic;font-size:clamp(18px,2.4vw,28px);color:var(--ink)}
+
+  /* nav */
+  .navbar{display:flex;align-items:center;gap:18px;padding:12px clamp(20px,4vw,56px) clamp(14px,2vh,22px);border-top:1px solid var(--line-soft)}
+  .arrow{appearance:none;cursor:pointer;background:transparent;border:1px solid var(--line-soft);color:var(--ink);width:38px;height:38px;border-radius:999px;display:grid;place-items:center;transition:.3s ease}
+  .arrow:hover{border-color:var(--line);background:rgba(212,162,76,.08)}
+  .arrow:disabled{opacity:.25;cursor:default}
+  .arrow svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.7;fill:none}
+  .dots{display:flex;gap:9px;flex:1;flex-wrap:wrap}
+  .dot{width:9px;height:9px;border-radius:999px;background:var(--line-soft);border:0;cursor:pointer;padding:0;transition:.3s}
+  .dot:hover{background:var(--dim)}
+  .dot.on{background:var(--amber);box-shadow:0 0 8px rgba(212,162,76,.6);transform:scale(1.15)}
+  .counter{font-family:"Space Mono",monospace;font-size:13px;letter-spacing:.06em;color:var(--dim);white-space:nowrap}
+  .counter b{color:var(--ink)}
+  .khint{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+
+  /* glyph */
+  .glyphFill .gbody{fill:currentColor}.glyphFill .gtuft{fill:currentColor;opacity:.72}
+  .glyphFill .gwing{fill:currentColor;opacity:.5}.glyphFill .geye{fill:#161229}
+  .glyphLine *{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .glyphLine .geye{fill:currentColor;stroke:none}
+
+  /* ===== emblem animations ===== */
+  /* Grail ladder */
+  @keyframes scan{0%{transform:translateY(96px);opacity:0}12%{opacity:1}88%{opacity:1}100%{transform:translateY(-8px);opacity:0}}
+  .e-scan{transform-box:fill-box;animation:scan 4s var(--ease) infinite}
+  @keyframes grailPulse{0%,72%{opacity:.25;transform:scale(.9)}86%{opacity:1;transform:scale(1.12)}100%{opacity:.25;transform:scale(.9)}}
+  .e-grail{transform-box:fill-box;transform-origin:center;animation:grailPulse 4s var(--ease) infinite}
+  /* Booster holo */
+  @keyframes holo{0%{transform:translateX(-130px)}55%,100%{transform:translateX(150px)}}
+  .e-holo{animation:holo 3.4s ease-in-out infinite}
+  @keyframes hitPop{0%,60%{transform:scale(1)}72%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .e-hit{transform-box:fill-box;transform-origin:center;animation:hitPop 3.4s ease-in-out infinite}
+  /* Pull engine */
+  @keyframes drop{0%,30%{transform:translateY(-50px);opacity:0}40%{opacity:1}82%{transform:translateY(70px);opacity:1}92%,100%{transform:translateY(70px);opacity:0}}
+  .e-capsule{transform-box:fill-box;animation:drop 3.2s ease-in infinite}
+  /* Trait roll */
+  @keyframes roll{0%{fill:#7f77dd}25%{fill:#e6c061}50%{fill:#8fd6a0}75%{fill:#e6896a}100%{fill:#7f77dd}}
+  .e-chip{animation:roll 1.1s steps(1,end) infinite}
+  .e-chip.c2{animation-delay:.27s}.e-chip.c3{animation-delay:.55s}.e-chip.c4{animation-delay:.82s}
+  @keyframes legend{0%,82%{opacity:0;transform:scale(.8)}90%{opacity:1;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
+  .e-legend{transform-box:fill-box;transform-origin:center;animation:legend 5.5s var(--ease) infinite}
+  /* Dupe alchemy */
+  @keyframes dupeA{0%,12%{transform:translate(-46px,30px);opacity:.85}46%{transform:translate(0,0);opacity:0}100%{transform:translate(-46px,30px);opacity:0}}
+  @keyframes dupeB{0%,12%{transform:translate(0,40px);opacity:.85}46%{transform:translate(0,0);opacity:0}100%{transform:translate(0,40px);opacity:0}}
+  @keyframes dupeC{0%,12%{transform:translate(46px,30px);opacity:.85}46%{transform:translate(0,0);opacity:0}100%{transform:translate(46px,30px);opacity:0}}
+  .e-dA{transform-box:fill-box;animation:dupeA 4.5s var(--ease) infinite}
+  .e-dB{transform-box:fill-box;animation:dupeB 4.5s var(--ease) infinite}
+  .e-dC{transform-box:fill-box;animation:dupeC 4.5s var(--ease) infinite}
+  @keyframes fuseFlash{0%,40%{opacity:0;transform:scale(.4)}50%{opacity:.95;transform:scale(1.1)}64%{opacity:0;transform:scale(1.5)}100%{opacity:0}}
+  .e-fuse{transform-box:fill-box;transform-origin:center;animation:fuseFlash 4.5s var(--ease) infinite}
+  @keyframes result{0%,44%{opacity:0;transform:scale(.5)}58%{opacity:1;transform:scale(1)}100%{opacity:1;transform:scale(1)}}
+  .e-result{transform-box:fill-box;transform-origin:center bottom;animation:result 4.5s var(--ease) infinite}
+
+  @media (max-width:880px){
+    .concept,.fair{grid-template-columns:1fr;gap:22px}
+    .spec{grid-template-columns:1fr}
+    .levers{grid-template-columns:1fr 1fr}
+    .cover .ghost{display:none}.khint{display:none}
+  }
+</style>
+</head>
+<body>
+
+<svg class="lib" aria-hidden="true">
+  <symbol id="glyph" viewBox="0 0 200 220">
+    <ellipse cx="54" cy="124" rx="33" ry="46" fill="currentColor" fill-opacity=".5"/>
+    <ellipse cx="146" cy="124" rx="33" ry="46" fill="currentColor" fill-opacity=".5"/>
+    <ellipse cx="100" cy="138" rx="34" ry="42" fill="currentColor"/>
+    <circle cx="100" cy="84" r="37" fill="currentColor"/>
+    <circle cx="100" cy="44" r="15" fill="currentColor" fill-opacity=".72"/>
+    <circle cx="79" cy="53" r="11" fill="currentColor" fill-opacity=".72"/>
+    <circle cx="121" cy="53" r="11" fill="currentColor" fill-opacity=".72"/>
+    <path d="M84 50 C76 30 70 22 64 14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <path d="M116 50 C124 30 130 22 136 14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="89" cy="86" r="5.5" fill="#161229"/>
+    <circle cx="111" cy="88" r="4.5" fill="#161229"/>
+  </symbol>
+</svg>
+
+<div class="deck" id="deck">
+  <div class="topbar">
+    <div class="wordmark">Hatchlings<span class="dot"> · </span></div>
+    <div class="deckmeta">Concept Pitch &nbsp;/&nbsp; The Chase Economy</div>
+  </div>
+
+  <div class="stage" id="stage">
+
+    <!-- 0 · COVER -->
+    <section class="slide cover on" style="--accent:#d4a24c">
+      <div class="ghost"><svg viewBox="0 0 200 220" class="glyphFill"><g class="glyphFloat"><use href="#glyph"/></g></svg></div>
+      <div class="stagger">
+        <div class="eyebrow"><span class="acc">Concept Pitch</span> &nbsp;·&nbsp; The Chase</div>
+        <h1>The Pull.</h1>
+        <p class="sub">Five mechanics that give a kidult the gambler&rsquo;s thrill — and a reason to buy the next one.</p>
+      </div>
+      <div class="foot">
+        <span>Prepared for <b>Tyler</b></span>
+        <span>It was never the creature</span>
+        <span><b>5</b> mechanics — engineered for the loop</span>
+      </div>
+    </section>
+
+    <!-- 1 · THESIS -->
+    <section class="slide" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">The Real Engine</div>
+        <h2 style="font-size:clamp(28px,4.8vw,60px);max-width:20ch">It was never the creature. It&rsquo;s the pull.</h2>
+        <div class="lede-block">
+          <p>Pop Mart built a billion-dollar business on tiny figures you can&rsquo;t see before you buy. Pokémon is the highest-grossing franchise in history. Graded cards and sneakers are genuine asset classes. <em>None of it is about how a shell opens</em> — it&rsquo;s the variable-reward loop wrapped around the object. Our last five ideas innovated the reveal. These five engineer the <em>loop</em>.</p>
+        </div>
+        <div class="levers">
+          <div class="lever"><div class="k">01</div><div class="t">Variable reward</div><div class="d">You never know what&rsquo;s inside. The unknown is the hit.</div></div>
+          <div class="lever"><div class="k">02</div><div class="t">The grail</div><div class="d">Tiered rarity + a chase you might never catch.</div></div>
+          <div class="lever"><div class="k">03</div><div class="t">Set completion</div><div class="d">The empty slot on the shelf that nags at you.</div></div>
+          <div class="lever"><div class="k">04</div><div class="t">Social proof</div><div class="d">The pull video, the flex, the envy.</div></div>
+          <div class="lever"><div class="k">05</div><div class="t">Trade value</div><div class="d">It&rsquo;s not a toy — it&rsquo;s an appreciating asset.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · GRAIL LADDER -->
+    <section class="slide concept" style="--accent:#e6c061">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Grail ladder emblem">
+          <defs>
+            <linearGradient id="tier" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4334"/><stop offset="1" stop-color="#2a251b"/></linearGradient>
+            <radialGradient id="grailg" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#f6dd92" stop-opacity=".95"/><stop offset="60%" stop-color="#e6c061" stop-opacity=".35"/><stop offset="100%" stop-color="#e6c061" stop-opacity="0"/></radialGradient>
+          </defs>
+          <ellipse cx="160" cy="298" rx="90" ry="12" fill="#000" opacity=".4"/>
+          <rect x="78" y="236" width="164" height="34" rx="6" fill="url(#tier)" stroke="#5a5240" stroke-opacity=".4"/>
+          <rect x="92" y="192" width="136" height="34" rx="6" fill="url(#tier)" stroke="#5a5240" stroke-opacity=".4"/>
+          <rect x="106" y="148" width="108" height="34" rx="6" fill="url(#tier)" stroke="#5a5240" stroke-opacity=".4"/>
+          <text x="160" y="259" text-anchor="middle" font-family="Space Mono,monospace" font-size="11" fill="#9a9078">COMMON ×13</text>
+          <text x="160" y="215" text-anchor="middle" font-family="Space Mono,monospace" font-size="11" fill="#b8a06a">RARE 1:8</text>
+          <text x="160" y="171" text-anchor="middle" font-family="Space Mono,monospace" font-size="11" fill="#cdae5e">ANOMALY 1:96</text>
+          <!-- grail at top -->
+          <circle class="e-grail" cx="160" cy="92" r="52" fill="url(#grailg)"/>
+          <g color="#f0d488"><svg x="128" y="58" width="64" height="70" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+          <text x="160" y="40" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="13" fill="#f6dd92">1 / 1</text>
+          <!-- rising scan highlight -->
+          <rect class="e-scan" x="74" y="142" width="172" height="10" rx="3" fill="#ffe9a8" opacity=".5"/>
+        </svg>
+        <span class="cap">#0007 / 2000 · check your serial</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">MECHANIC 01</div>
+        <h2>Grail Ladder</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Every box could be the one-of-one.&rdquo;</p>
+        <p class="body">A published rarity ladder: 13 Commons, <em>Rare</em> morphs, <em>Super-Rare</em> anomalies (miscolors, glows, albinos), and a single <em>1-of-1 Prototype</em> per series. Every unit is serial-numbered with a sealed brass authentication coin — low serials and anomalies command the resale premium.</p>
+        <dl class="spec">
+          <div><dt>The hit</dt><dd>The jackpot chase + the near-miss; reading your serial is a scratch-ticket moment</dd></div>
+          <div><dt>Odds</dt><dd>Rare <b>1:8</b> · Anomaly <b>1:96</b> · Prototype <b>1:∞</b></dd></div>
+          <div><dt>Why it sells</dt><dd>Built-in resale &amp; status; grading culture; scarcity that appreciates</dd></div>
+          <div><dt>Margin</dt><dd>A brass coin costs cents; perceived value is enormous</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>It turns a $15 figure into a lottery ticket with a collectible attached.</p></div>
+      </div>
+    </section>
+
+    <!-- 3 · THE BOOSTER -->
+    <section class="slide concept" style="--accent:#86d0e6">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Booster emblem">
+          <defs>
+            <linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2540"/><stop offset="1" stop-color="#181428"/></linearGradient>
+            <linearGradient id="foil" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#86d0e6" stop-opacity="0"/><stop offset="50%" stop-color="#d8f4ff" stop-opacity=".85"/><stop offset="100%" stop-color="#c79ff0" stop-opacity="0"/></linearGradient>
+            <clipPath id="hitclip"><rect x="124" y="78" width="72" height="104" rx="8"/></clipPath>
+          </defs>
+          <ellipse cx="160" cy="300" rx="86" ry="12" fill="#000" opacity=".4"/>
+          <!-- side cards -->
+          <g transform="rotate(-16 160 200)"><rect x="92" y="110" width="60" height="92" rx="7" fill="url(#card)" stroke="#3a3458" stroke-opacity=".5"/></g>
+          <g transform="rotate(16 160 200)"><rect x="168" y="110" width="60" height="92" rx="7" fill="url(#card)" stroke="#3a3458" stroke-opacity=".5"/></g>
+          <!-- hit card -->
+          <g class="e-hit">
+            <rect x="124" y="78" width="72" height="104" rx="8" fill="url(#card)" stroke="#86d0e6" stroke-opacity=".7" stroke-width="1.5"/>
+            <g color="#9aa0e8"><svg x="132" y="92" width="56" height="62" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+            <text x="160" y="170" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="11" fill="#cdeefb">RARE</text>
+            <g clip-path="url(#hitclip)"><rect class="e-holo" x="124" y="78" width="40" height="104" fill="url(#foil)"/></g>
+          </g>
+          <!-- pack -->
+          <rect x="116" y="236" width="88" height="56" rx="8" fill="#1c1830" stroke="#3a3458" stroke-opacity=".6"/>
+          <text x="160" y="269" text-anchor="middle" font-family="Space Mono,monospace" font-size="11" fill="#86d0e6">PACK · 5</text>
+        </svg>
+        <span class="cap">5 per pack · 1 guaranteed hit</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">MECHANIC 02</div>
+        <h2>The Booster</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Open five. One is guaranteed to hit.&rdquo;</p>
+        <p class="body">Sold as a sealed pack of five mini-hatchlings, with one slot <em>guaranteed Rare or better</em>. Foil and &ldquo;parallel&rdquo; finishes are the chase layer. The whole format is engineered for the pack-opening ritual — and for the camera.</p>
+        <dl class="spec">
+          <div><dt>The hit</dt><dd>Five jolts of suspense per purchase, plus the guaranteed-but-which tension</dd></div>
+          <div><dt>Chase</dt><dd>Foil parallels <b>1:12</b>, full-art &ldquo;alt&rdquo; <b>1:48</b></dd></div>
+          <div><dt>Why it sells</dt><dd>Bigger basket size; the single most-copied structure in collectibles</dd></div>
+          <div><dt>Free marketing</dt><dd>Made for pack-opening videos — viewers become buyers</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>TCGs proved it for 25 years: a guaranteed rare keeps you opening; the chase keeps you buying.</p></div>
+      </div>
+    </section>
+
+    <!-- 4 · THE PULL ENGINE -->
+    <section class="slide concept" style="--accent:#e6896a">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Pull engine emblem">
+          <defs>
+            <radialGradient id="globe" cx="42%" cy="34%" r="68%"><stop offset="0" stop-color="#2b2740" stop-opacity=".5"/><stop offset="100%" stop-color="#141120" stop-opacity=".5"/></radialGradient>
+          </defs>
+          <ellipse cx="160" cy="300" rx="80" ry="11" fill="#000" opacity=".4"/>
+          <!-- base -->
+          <rect x="104" y="206" width="112" height="76" rx="10" fill="#3a2a1e"/>
+          <rect x="120" y="250" width="80" height="30" rx="5" fill="#241810"/>
+          <text x="160" y="270" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#e6896a">INSERT</text>
+          <!-- globe -->
+          <circle cx="160" cy="150" r="76" fill="url(#globe)" stroke="#5a5270" stroke-opacity=".35" stroke-width="2"/>
+          <circle cx="138" cy="128" r="14" fill="#e6896a" opacity=".8"/>
+          <circle cx="178" cy="140" r="13" fill="#7f77dd" opacity=".8"/>
+          <circle cx="158" cy="170" r="12" fill="#8fd6a0" opacity=".8"/>
+          <circle cx="186" cy="172" r="10" fill="#e6c061" opacity=".8"/>
+          <!-- crank -->
+          <g>
+            <circle cx="232" cy="208" r="7" fill="#caa46a"/>
+            <rect x="228" y="208" width="9" height="34" rx="4" fill="#caa46a"/>
+            <circle cx="232" cy="240" r="6" fill="#e6c061"/>
+            <animateTransform attributeName="transform" type="rotate" from="0 232 208" to="360 232 208" dur="2.6s" repeatCount="indefinite"/>
+          </g>
+          <!-- dropping capsule -->
+          <g class="e-capsule"><circle cx="160" cy="206" r="11" fill="#e6896a"/><path d="M149 206 a11 11 0 0 1 22 0 Z" fill="#f4b79c"/></g>
+        </svg>
+        <span class="cap">own the machine · buy the luck</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">MECHANIC 03</div>
+        <h2>The Pull Engine</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Own the machine. Buy the luck.&rdquo;</p>
+        <p class="body">A beautiful desk gachapon — the showpiece keepsake — fed by sealed, randomized cartridges on subscription. The app logs your collection and shows live odds. The <em>crank is the ritual</em>; the dopamine lives on your desk, not in a checkout flow.</p>
+        <dl class="spec">
+          <div><dt>The hit</dt><dd>A tactile, repeatable, at-home pull you control</dd></div>
+          <div><dt>Model</dt><dd>Razor-and-blades: <b>device + refills</b> on subscription</dd></div>
+          <div><dt>Why it sells</dt><dd>Recurring revenue &amp; high LTV; the device anchors the brand on the desk</dd></div>
+          <div><dt>Cadence</dt><dd>A monthly cartridge = scheduled dopamine</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>The casino lives in your home, and you paid to install it.</p></div>
+      </div>
+    </section>
+
+    <!-- 5 · TRAIT GENETICS -->
+    <section class="slide concept" style="--accent:#8fd6a0">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Trait genetics emblem">
+          <ellipse cx="160" cy="298" rx="76" ry="11" fill="#000" opacity=".4"/>
+          <g color="#6f66c4"><svg x="104" y="64" width="112" height="124" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+          <!-- trait chips re-rolling -->
+          <rect class="e-chip c1" x="86"  y="214" width="34" height="34" rx="7"/>
+          <rect class="e-chip c2" x="128" y="214" width="34" height="34" rx="7"/>
+          <rect class="e-chip c3" x="170" y="214" width="34" height="34" rx="7"/>
+          <rect class="e-chip c4" x="212" y="214" width="34" height="34" rx="7"/>
+          <text x="160" y="270" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#9a9078">ROLLING TRAITS…</text>
+          <!-- legendary stamp -->
+          <g class="e-legend">
+            <rect x="108" y="120" width="104" height="30" rx="6" fill="none" stroke="#8fd6a0" stroke-width="2"/>
+            <text x="160" y="141" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="13" fill="#aef0bf">LEGENDARY</text>
+          </g>
+        </svg>
+        <span class="cap">millions of combos · a few are legendary</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">MECHANIC 04</div>
+        <h2>Trait Genetics</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;No two alike. A few are legendary.&rdquo;</p>
+        <p class="body">Each creature is finished from a randomized roll of trait modules — species, pelt, pattern, eyes, a <em>mutation</em>, an accessory. Millions of combinations, so yours is effectively one-off. A printed trait sheet scores every trait&rsquo;s rarity, and certain stacks read as <em>Legendary</em>.</p>
+        <dl class="spec">
+          <div><dt>The hit</dt><dd>The trait roll + the dream of a legendary stack</dd></div>
+          <div><dt>Space</dt><dd>6 trait slots → <b>&gt;2M</b> possible combinations</dd></div>
+          <div><dt>Why it sells</dt><dd>Near-unique units; &ldquo;rate my pull&rdquo; is built-in UGC</dd></div>
+          <div><dt>Depth</dt><dd>Trading-card parallels × creature genetics, made physical</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>Everyone owns a different one — so everyone wonders if the next is rarer.</p></div>
+      </div>
+    </section>
+
+    <!-- 6 · DUPE ALCHEMY -->
+    <section class="slide concept" style="--accent:#c98fe0">
+      <div class="vis">
+        <svg viewBox="0 0 320 320" aria-label="Dupe alchemy emblem">
+          <defs>
+            <radialGradient id="fuseg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#efd0fb" stop-opacity=".95"/><stop offset="60%" stop-color="#c98fe0" stop-opacity=".35"/><stop offset="100%" stop-color="#c98fe0" stop-opacity="0"/></radialGradient>
+          </defs>
+          <ellipse cx="160" cy="300" rx="84" ry="12" fill="#000" opacity=".4"/>
+          <!-- three dupes converging -->
+          <g class="e-dA" color="#7d74c6"><svg x="130" y="148" width="60" height="66" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+          <g class="e-dB" color="#7d74c6"><svg x="130" y="148" width="60" height="66" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+          <g class="e-dC" color="#7d74c6"><svg x="130" y="148" width="60" height="66" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+          <!-- fuse flash -->
+          <circle class="e-fuse" cx="160" cy="170" r="58" fill="url(#fuseg)"/>
+          <!-- result -->
+          <g class="e-result" color="#b58fe0"><svg x="108" y="92" width="104" height="116" viewBox="0 0 200 220" class="glyphFill"><use href="#glyph"/></svg></g>
+        </svg>
+        <span class="cap">three doubles → one new shot</span>
+      </div>
+      <div class="stagger">
+        <div class="bignum">MECHANIC 05</div>
+        <h2>Dupe Alchemy</h2>
+        <div class="accentrule"></div>
+        <p class="hook">&ldquo;Turn your doubles into another shot.&rdquo;</p>
+        <p class="body">Bring or scan your duplicates to <em>fuse</em> them up the ladder — five Commons buy a guaranteed Rare roll; three Rares buy a Super-Rare roll. It kills the number-one blind-box complaint and bolts on a second gamble: the transmute itself.</p>
+        <dl class="spec">
+          <div><dt>The hit</dt><dd>Dupe-regret becomes fuel; the sacrifice-and-roll ritual</dd></div>
+          <div><dt>Rates</dt><dd><b>5 → 1</b> Rare · <b>3 → 1</b> Super-Rare</dd></div>
+          <div><dt>Why it sells</dt><dd>Fixes dupes; drives repeat buys to feed the forge</dd></div>
+          <div><dt>Retention</dt><dd>A reason to keep playing after the shelf is &ldquo;full&rdquo;</dd></div>
+        </dl>
+        <div class="why"><span class="lbl">The compulsion</span>
+          <p>Nothing you pull is ever wasted — which means there&rsquo;s always a reason to pull again.</p></div>
+      </div>
+    </section>
+
+    <!-- 7 · PLAY FAIR -->
+    <section class="slide fair" style="--accent:#9fd6a8">
+      <div class="stagger">
+        <div class="eyebrow">The Premium Moat</div>
+        <h2 style="font-size:clamp(26px,4.4vw,52px)">A chase you can trust.</h2>
+        <ul>
+          <li><b>Published odds</b> on every box — printed and in-app, no hidden rates</li>
+          <li><b>A pity timer</b> — a Super-Rare guaranteed within 30 boxes, so the chase always ends</li>
+          <li><b>Adults only</b> — positioned and priced for kidults, never marketed to children</li>
+          <li><b>No dark patterns</b> — no fake scarcity timers, no pay-to-reveal traps</li>
+        </ul>
+      </div>
+      <div class="stagger">
+        <p class="body" style="max-width:42ch;font-size:clamp(14px,1.6vw,18px)">Regulators are already circling hidden loot-box odds. Transparency isn&rsquo;t a compliance cost here — it&rsquo;s the <em style="color:var(--ink);font-style:italic">brand position</em>: the collectible that respects the collector. The thrill of the chase, played honestly, is the version adults will pay a premium for and trust their friends with.</p>
+        <div class="why" style="border-color:#9fd6a8"><span class="lbl" style="color:#9fd6a8">The angle</span>
+          <p>Everyone else hides the math. We make the fairness the flex.</p></div>
+      </div>
+    </section>
+
+    <!-- 8 · SCORECARD -->
+    <section class="slide" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">The Read</div>
+        <h2 style="font-size:clamp(26px,4.4vw,52px)">How they stack up.</h2>
+        <div class="scorewrap">
+          <table class="score" id="scoreTable">
+            <thead><tr><th>Mechanic</th><th>Dopamine pull</th><th>Repeat buy</th><th>Resale &amp; status</th><th>Margin</th><th>Feasibility</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="scorenote"><b>Recommendation — don&rsquo;t pick one, stack three.</b> Make <b>Grail Ladder</b> the rarity spine of the whole line, sell it in <b>Boosters</b> for basket size and pack-opening reach, and add <b>Dupe Alchemy</b> so a &ldquo;finished&rdquo; collector keeps playing. Trait Genetics and the Pull Engine are bigger phase-two bets (manufacturing &amp; hardware), but either could become the signature that sets the brand apart.</p>
+      </div>
+    </section>
+
+    <!-- 9 · CLOSING -->
+    <section class="slide closing" style="--accent:#d4a24c">
+      <div class="stagger">
+        <div class="eyebrow">Next Step</div>
+        <h1>Stack them.<br>Then pick the hero.</h1>
+        <div class="pickrow">
+          <div class="pick star"><div class="n">Grail Ladder</div><div class="d">the rarity spine</div></div>
+          <div class="pick star"><div class="n">The Booster</div><div class="d">basket + reach</div></div>
+          <div class="pick star"><div class="n">Dupe Alchemy</div><div class="d">retention forge</div></div>
+          <div class="pick"><div class="n">Trait Genetics</div><div class="d">phase-two signature</div></div>
+          <div class="pick"><div class="n">Pull Engine</div><div class="d">phase-two hardware</div></div>
+        </div>
+        <p class="ask">Tell me which to build out — a render, an unboxing flow, or a one-page business model for the stack.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="navbar">
+    <button class="arrow" id="prev" aria-label="Previous"><svg viewBox="0 0 24 24"><polyline points="15 5 8 12 15 19"/></svg></button>
+    <button class="arrow" id="next" aria-label="Next"><svg viewBox="0 0 24 24"><polyline points="9 5 16 12 9 19"/></svg></button>
+    <div class="dots" id="dots"></div>
+    <div class="counter"><b id="cur">01</b> / <span id="tot">10</span></div>
+    <div class="khint">← → to navigate</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const deck=document.getElementById('deck'), slides=[...document.querySelectorAll('.slide')];
+  const dotsEl=document.getElementById('dots'), curEl=document.getElementById('cur'), totEl=document.getElementById('tot');
+  const prevB=document.getElementById('prev'), nextB=document.getElementById('next');
+  let i=0;
+  deck.classList.add('js');
+  totEl.textContent=String(slides.length).padStart(2,'0');
+  slides.forEach((_,k)=>{const d=document.createElement('button');d.className='dot'+(k===0?' on':'');
+    d.setAttribute('aria-label','Slide '+(k+1));d.addEventListener('click',()=>go(k));dotsEl.appendChild(d);});
+  const dots=[...dotsEl.children];
+  function go(n){i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('on',k===i));
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    curEl.textContent=String(i+1).padStart(2,'0');
+    prevB.disabled=i===0;nextB.disabled=i===slides.length-1;}
+  const next=()=>go(i+1),prev=()=>go(i-1);
+  prevB.addEventListener('click',prev);nextB.addEventListener('click',next);
+  window.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='Home'){go(0);}else if(e.key==='End'){go(slides.length-1);}
+    else if(e.key>='1'&&e.key<='9'){go(+e.key-1);}});
+  let sx=0;const stage=document.getElementById('stage');
+  stage.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+  stage.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50){dx<0?next():prev();}},{passive:true});
+
+  const scores=[
+    {name:'Grail Ladder', c:'#e6c061', d:5, r:4, s:5, m:4, f:4, lead:true},
+    {name:'The Booster',  c:'#86d0e6', d:5, r:5, s:3, m:4, f:4, lead:true},
+    {name:'Pull Engine',  c:'#e6896a', d:4, r:5, s:2, m:5, f:2},
+    {name:'Trait Genetics',c:'#8fd6a0',d:4, r:4, s:4, m:3, f:2},
+    {name:'Dupe Alchemy', c:'#c98fe0', d:3, r:5, s:3, m:3, f:3, lead:true},
+  ];
+  const tbody=document.querySelector('#scoreTable tbody');
+  const pips=(v,c)=>{let h='<div class="pips">';for(let k=1;k<=5;k++)h+=`<span class="pip ${k<=v?'f':''}" style="--pipc:${c}"></span>`;return h+'</div>';};
+  scores.forEach(s=>{const tr=document.createElement('tr');if(s.lead)tr.className='lead';
+    tr.innerHTML=`<th scope="row"><span class="swatch" style="background:${s.c}"></span>${s.name}</th>`+
+      `<td>${pips(s.d,s.c)}</td><td>${pips(s.r,s.c)}</td><td>${pips(s.s,s.c)}</td><td>${pips(s.m,s.c)}</td><td>${pips(s.f,s.c)}</td>`;
+    tbody.appendChild(tr);});
+  go(0);
+})();
+</script>
+</body>
+</html>
