@@ -330,12 +330,12 @@
   #scene.is-sealed #innerGlow    { opacity: calc(var(--warmth-glow, 0) * 0.45); }
 
   /* === TRIGGERED === */
-  #scene.is-triggered #shell       { opacity: .42; }
-  #scene.is-triggered #shellMilky  { opacity: .55; }
-  #scene.is-triggered #innerGlow   { opacity: 1; }
-  #scene.is-triggered #silhouette  { opacity: .92; }
+  #scene.is-triggered #shell       { opacity: .34; }
+  #scene.is-triggered #shellMilky  { opacity: .40; }
+  #scene.is-triggered #innerGlow   { opacity: .85; }
+  #scene.is-triggered #silhouette  { opacity: 1; }
   #scene.is-triggered #cracks      { opacity: 1; }
-  #scene.is-triggered #warmPool    { opacity: .55; }
+  #scene.is-triggered #warmPool    { opacity: .30; }
 
   /* === HATCHED === */
   #scene.is-hatched #shell    { opacity: 0; }
@@ -480,9 +480,9 @@
           <stop offset="100%" stop-color="#d4a24c" stop-opacity="0"/>
         </radialGradient>
         <radialGradient id="gSil" cx="50%" cy="40%" r="62%">
-          <stop offset="0%"  stop-color="#3a3477"/>
-          <stop offset="60%" stop-color="#26215c"/>
-          <stop offset="100%" stop-color="#16133a"/>
+          <stop offset="0%"  stop-color="#5a52a8"/>
+          <stop offset="60%" stop-color="#3a3480"/>
+          <stop offset="100%" stop-color="#221c54"/>
         </radialGradient>
 
         <!-- ===== gradients: creature ===== -->
@@ -618,10 +618,10 @@
             <ellipse cx="450" cy="400" rx="92" ry="104" fill="url(#gSil)" filter="url(#fSilBlur)"/>
             <circle cx="450" cy="320" r="66" fill="url(#gSil)" filter="url(#fSilBlur)"/>
             <g id="eyeSpots">
-              <circle cx="424" cy="330" r="13" fill="#26215c"/>
-              <circle cx="476" cy="334" r="11" fill="#26215c"/>
-              <circle cx="424" cy="330" r="20" fill="#3a2d6e" opacity=".4" filter="url(#fSoft)"/>
-              <circle cx="476" cy="334" r="18" fill="#3a2d6e" opacity=".4" filter="url(#fSoft)"/>
+              <circle cx="424" cy="330" r="24" fill="#15113a" opacity=".55" filter="url(#fSoft)"/>
+              <circle cx="476" cy="334" r="21" fill="#15113a" opacity=".55" filter="url(#fSoft)"/>
+              <circle cx="424" cy="330" r="15" fill="#26215c"/>
+              <circle cx="476" cy="334" r="12.5" fill="#26215c"/>
             </g>
           </g>
 
@@ -868,7 +868,7 @@
       }, 280);
       current = state;
     }
-    scene.className = 'is-' + state;
+    scene.setAttribute('class', 'is-' + state);
     [...stepsEl.children].forEach(b =>
       b.classList.toggle('active', b.dataset.state === state));
     if (typeof warmGlow === 'number'){
