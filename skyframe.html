@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skyframe — a plane tracker that looks like art</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:        #0d0b09;
+    --bg-2:      #15110c;
+    --ink:       #e9e1d3;
+    --ink-dim:   #8c8170;
+    --ink-faint: #5b5345;
+    --amber:     #d4a24c;
+    --line:      rgba(212,162,76,0.22);
+    --line-soft: rgba(233,225,211,0.10);
+    --ease:      cubic-bezier(.65,.02,.25,1);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 32% 18%, rgba(212,162,76,0.09) 0%, rgba(212,162,76,0.03) 28%, transparent 58%),
+      radial-gradient(140% 120% at 50% 42%, var(--bg-2) 0%, var(--bg) 62%);
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.045;
+    z-index: 50;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 22px 28px 60px; }
+
+  /* ---------- top bar ---------- */
+  header {
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    padding-bottom: 18px; border-bottom: 1px solid var(--line-soft); margin-bottom: 26px;
+  }
+  .wordmark { display: flex; align-items: baseline; gap: 10px; margin-right: 6px; }
+  .wordmark h1 {
+    margin: 0; font-family: "Fraunces", serif; font-weight: 500;
+    font-size: 21px; letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .wordmark span { font-size: 11px; color: var(--ink-dim); letter-spacing: 0.06em; }
+
+  nav.tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.035); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px; }
+  nav.tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--ink-dim);
+    font: 500 12.5px/1 "Inter", sans-serif; letter-spacing: 0.09em; text-transform: uppercase;
+    padding: 8px 16px; border-radius: 999px; cursor: pointer; transition: color .25s var(--ease), background .25s var(--ease);
+  }
+  nav.tabs button:hover { color: var(--ink); }
+  nav.tabs button.active { background: var(--amber); color: #1a1408; }
+
+  .spacer { flex: 1; }
+
+  .live {
+    display: flex; align-items: center; gap: 8px;
+    font: 500 11px/1 "IBM Plex Mono", monospace; letter-spacing: 0.08em; color: var(--ink-dim);
+  }
+  .live .dot { width: 7px; height: 7px; border-radius: 50%; background: #4c4436; transition: background .3s; }
+  .live.on .dot { background: #67c26b; box-shadow: 0 0 8px rgba(103,194,107,0.7); animation: pulse 2s infinite; }
+  .live.err .dot { background: #d66; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    margin-bottom: 30px; font-size: 12px; color: var(--ink-dim);
+  }
+  .controls .group { display: flex; align-items: center; gap: 8px; }
+  .controls label { letter-spacing: 0.08em; text-transform: uppercase; font-size: 10.5px; color: var(--ink-faint); }
+  .controls input[type="text"] {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--line-soft); border-radius: 7px;
+    color: var(--ink); font: 400 12px "IBM Plex Mono", monospace; padding: 7px 10px; width: 148px; outline: none;
+  }
+  .controls input.loc-label { width: 200px; font-family: "Inter", sans-serif; }
+  .controls input:focus { border-color: var(--line); }
+  .controls select {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--line-soft); border-radius: 7px;
+    color: var(--ink); font: 400 12px "Inter", sans-serif; padding: 7px 8px; outline: none;
+  }
+  .controls select option { background: #1a1712; }
+  .controls button.btn {
+    appearance: none; background: rgba(212,162,76,0.12); border: 1px solid var(--line); color: var(--amber);
+    font: 500 11.5px "Inter", sans-serif; letter-spacing: 0.05em; padding: 7px 13px; border-radius: 7px; cursor: pointer;
+    transition: background .25s;
+  }
+  .controls button.btn:hover { background: rgba(212,162,76,0.22); }
+  .palette { display: flex; gap: 7px; }
+  .palette button {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0;
+    transition: transform .2s var(--ease);
+  }
+  .palette button:hover { transform: scale(1.15); }
+  .palette button.active { border-color: var(--ink); }
+
+  /* ---------- frame (poster) view ---------- */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .wall { display: flex; justify-content: center; padding: 10px 0 30px; }
+  .frame {
+    background: linear-gradient(160deg, #232323, #0e0e0e);
+    padding: 16px;
+    border-radius: 3px;
+    box-shadow:
+      0 30px 70px rgba(0,0,0,0.65),
+      0 4px 14px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.09);
+    width: min(620px, 94vw);
+  }
+  .mat {
+    background: linear-gradient(175deg, #f3efe4, #e7e2d3);
+    padding: 34px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.28);
+  }
+  .art {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    padding: 7.5% 8% 6%;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.18);
+    transition: background .5s var(--ease);
+  }
+  .art-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .art-title {
+    font-family: "Fraunces", serif; font-weight: 400;
+    letter-spacing: 0.42em; text-transform: uppercase; font-size: clamp(10px, 2.2vw, 14px);
+  }
+  .art-date { font: 400 9px "IBM Plex Mono", monospace; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.62; }
+  .art-planes { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; padding: 4% 0; }
+  .art-plane { display: flex; flex-direction: column; align-items: flex-start; }
+  .art-plane svg { display: block; height: auto; }
+  .art-caption {
+    font: 400 8.5px "IBM Plex Mono", monospace; letter-spacing: 0.06em;
+    opacity: 0.66; margin-top: 3px; text-transform: uppercase; white-space: nowrap;
+  }
+  .art-caption b { font-weight: 500; opacity: 1; }
+  .art-foot {
+    font: 400 8.5px "IBM Plex Mono", monospace; letter-spacing: 0.14em;
+    text-transform: uppercase; opacity: 0.6; text-align: center; margin-top: auto;
+  }
+  .art-empty {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    font-family: "Fraunces", serif; letter-spacing: 0.3em; text-transform: uppercase; font-size: 13px; opacity: 0.75;
+  }
+  .art-empty small { font-family: "IBM Plex Mono", monospace; font-size: 8.5px; letter-spacing: 0.14em; opacity: 0.7; }
+
+  .frame-note { text-align: center; font-size: 11.5px; color: var(--ink-faint); letter-spacing: 0.06em; margin-top: -12px; }
+
+  /* ---------- sky (radar) view ---------- */
+  .sky-wrap { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 30px; align-items: start; }
+  @media (max-width: 900px) { .sky-wrap { grid-template-columns: 1fr; } }
+  .sky-paper {
+    border-radius: 4px; padding: 4.5%;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: background .5s var(--ease);
+  }
+  .sky-paper svg { display: block; width: 100%; height: auto; }
+
+  .sky-list h3, .coll-head h3 {
+    margin: 0 0 4px; font-family: "Fraunces", serif; font-weight: 500; font-size: 17px; letter-spacing: 0.04em;
+  }
+  .sky-list .sub, .coll-head .sub { font-size: 12px; color: var(--ink-dim); margin-bottom: 16px; }
+  table.flights { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.flights th {
+    text-align: left; font: 500 10px "Inter", sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-faint); padding: 6px 8px; border-bottom: 1px solid var(--line-soft);
+  }
+  table.flights td { padding: 8px; border-bottom: 1px solid var(--line-soft); color: var(--ink); vertical-align: middle; }
+  table.flights td.mono { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-dim); }
+  table.flights td .op { font-weight: 500; }
+  table.flights td .ac-type { display: block; font-size: 11px; color: var(--ink-dim); }
+  .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
+
+  /* ---------- collection view ---------- */
+  .coll-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .coll-head .spacer { flex: 1; }
+  .coll-head button.btn-ghost {
+    appearance: none; background: none; border: 1px solid var(--line-soft); color: var(--ink-faint);
+    font: 400 11px "Inter", sans-serif; padding: 6px 12px; border-radius: 7px; cursor: pointer;
+  }
+  .coll-head button.btn-ghost:hover { color: var(--ink-dim); border-color: var(--line); }
+  .coll-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 14px; }
+  .coll-card {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); border-radius: 10px;
+    padding: 16px 16px 13px; transition: border-color .25s;
+  }
+  .coll-card:hover { border-color: var(--line); }
+  .coll-card svg { display: block; width: 82%; height: auto; margin: 4px auto 12px; }
+  .coll-card .reg { font: 500 13px "IBM Plex Mono", monospace; letter-spacing: 0.04em; }
+  .coll-card .op { font-size: 12px; color: var(--ink); margin-top: 2px; }
+  .coll-card .meta { font-size: 10.5px; color: var(--ink-faint); margin-top: 6px; display: flex; justify-content: space-between; }
+  .coll-empty { color: var(--ink-dim); font-size: 13px; padding: 40px 0; text-align: center; }
+
+  footer.credits {
+    margin-top: 46px; padding-top: 16px; border-top: 1px solid var(--line-soft);
+    font-size: 11px; color: var(--ink-faint); letter-spacing: 0.04em; text-align: center;
+  }
+  footer.credits a { color: var(--ink-dim); text-decoration: none; border-bottom: 1px dotted var(--ink-faint); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="wordmark">
+      <h1>Skyframe</h1>
+      <span>a plane tracker that looks like art</span>
+    </div>
+    <nav class="tabs">
+      <button data-view="frame" class="active">Frame</button>
+      <button data-view="sky">Sky</button>
+      <button data-view="collection">Collection</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="live" id="live"><div class="dot"></div><span id="liveText">connecting…</span></div>
+  </header>
+
+  <div class="controls">
+    <div class="group">
+      <button class="btn" id="geoBtn">◎ Use my location</button>
+    </div>
+    <div class="group">
+      <label>Position</label>
+      <input type="text" id="latlon" placeholder="lat, lon" spellcheck="false" />
+    </div>
+    <div class="group">
+      <label>Radius</label>
+      <select id="radius">
+        <option value="10">10 nm</option>
+        <option value="25" selected>25 nm</option>
+        <option value="50">50 nm</option>
+        <option value="100">100 nm</option>
+      </select>
+    </div>
+    <div class="group">
+      <label>Caption</label>
+      <input type="text" id="locLabel" class="loc-label" placeholder="received over …" spellcheck="false" />
+    </div>
+    <div class="group">
+      <label>Artwork</label>
+      <div class="palette" id="palette"></div>
+    </div>
+  </div>
+
+  <!-- FRAME -->
+  <section class="view active" id="view-frame">
+    <div class="wall">
+      <div class="frame">
+        <div class="mat">
+          <div class="art" id="art"></div>
+        </div>
+      </div>
+    </div>
+    <p class="frame-note" id="frameNote"></p>
+  </section>
+
+  <!-- SKY -->
+  <section class="view" id="view-sky">
+    <div class="sky-wrap">
+      <div class="sky-paper" id="skyPaper"></div>
+      <div class="sky-list">
+        <h3>Overhead right now</h3>
+        <div class="sub" id="skySub">—</div>
+        <table class="flights">
+          <thead><tr><th>Flight</th><th>Aircraft</th><th>Alt</th><th>Where</th></tr></thead>
+          <tbody id="flightRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLLECTION -->
+  <section class="view" id="view-collection">
+    <div class="coll-head">
+      <div>
+        <h3>Your collection</h3>
+        <div class="sub" id="collSub">Every aircraft that has crossed your sky.</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-ghost" id="collClear">Clear collection</button>
+    </div>
+    <div class="coll-grid" id="collGrid"></div>
+    <div class="coll-empty" id="collEmpty" style="display:none">
+      Nothing collected yet — leave Skyframe open and the planes will come to you.
+    </div>
+  </section>
+
+  <footer class="credits">
+    Live ADS-B data via <a href="https://airplanes.live" target="_blank" rel="noopener">airplanes.live</a>, broadcast by the aircraft themselves
+    and received by a worldwide network of enthusiast antennas. Sightings are stored only in this browser.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ================= palettes ================= */
+const PALETTES = {
+  cerulean: { name: "Cerulean",  bg: "#2b63d4", ink: "#f5f1e4", body: "#f4f1e8", outline: "rgba(15,25,60,0.18)" },
+  signal:   { name: "Signal Red",bg: "#a92330", ink: "#f6efdc", body: "#f4f0e3", outline: "rgba(60,10,15,0.20)" },
+  midnight: { name: "Midnight",  bg: "#111a2e", ink: "#e8e4d6", body: "#ece8da", outline: "rgba(0,0,0,0.25)"    },
+  gallery:  { name: "Gallery",   bg: "#ece5d2", ink: "#232a40", body: "#fbf9f2", outline: "rgba(35,42,64,0.45)" },
+};
+
+/* ============ airline lookup (ICAO callsign prefix) ============ */
+const AIRLINES = {
+  AAL:["American Airlines","#b0223c"], UAL:["United","#005daa"], DAL:["Delta","#c8102e"],
+  SWA:["Southwest","#f5a800"], ASA:["Alaska Airlines","#01426a"], JBU:["JetBlue","#003876"],
+  NKS:["Spirit","#d8b900"], FFT:["Frontier","#00543d"], AAY:["Allegiant","#e8a01d"],
+  SKW:["SkyWest","#00539b"], RPA:["Republic","#4a6695"], ENY:["Envoy","#b0223c"], EDV:["Endeavor","#c8102e"],
+  JIA:["PSA Airlines","#b0223c"], HAL:["Hawaiian","#9b3b8f"],
+  BAW:["British Airways","#075aaa"], SHT:["BA Shuttle","#075aaa"], VIR:["Virgin Atlantic","#da0530"],
+  EZY:["easyJet","#f60"], EJU:["easyJet Europe","#f60"], RYR:["Ryanair","#073590"],
+  WZZ:["Wizz Air","#c6007e"], WUK:["Wizz Air UK","#c6007e"],
+  AFR:["Air France","#002157"], KLM:["KLM","#00a1de"], DLH:["Lufthansa","#0a1d3d"],
+  SWR:["Swiss","#e30613"], AUA:["Austrian","#d81e05"], SAS:["SAS","#000f6b"],
+  IBE:["Iberia","#d7192d"], VLG:["Vueling","#ffcc00"], TAP:["TAP Portugal","#bf0d3e"],
+  THY:["Turkish Airlines","#c90a1c"], ELY:["El Al","#003399"], LOT:["LOT Polish","#002d69"],
+  AFL:["Aeroflot","#003da5"], FIN:["Finnair","#0b1560"], EIN:["Aer Lingus","#006272"],
+  NAX:["Norwegian","#d81939"], NOZ:["Norwegian","#d81939"], ITY:["ITA Airways","#0a2240"],
+  EWG:["Eurowings","#8c0043"], TRA:["Transavia","#00d66c"], PGT:["Pegasus","#e8b300"],
+  UAE:["Emirates","#d71a21"], QTR:["Qatar Airways","#5c0632"], ETD:["Etihad","#b58f2f"],
+  SVA:["Saudia","#006341"], GFA:["Gulf Air","#a38047"], MEA:["MEA","#00703c"],
+  SIA:["Singapore Airlines","#002664"], SLK:["SilkAir","#002664"], CPA:["Cathay Pacific","#006564"],
+  JAL:["Japan Airlines","#e60012"], ANA:["All Nippon Airways","#1c2f6b"], KAL:["Korean Air","#3aa1d8"],
+  AAR:["Asiana","#8a1e41"], CES:["China Eastern","#1c3f94"], CSN:["China Southern","#008ac9"],
+  CCA:["Air China","#e10600"], CHH:["Hainan Airlines","#c8a75c"], EVA:["EVA Air","#0e5a45"],
+  CAL:["China Airlines","#2b2e83"], HDA:["Cathay Dragon","#b0233a"],
+  THA:["Thai Airways","#7d3f98"], VJC:["VietJet Air","#ec1c24"], HVN:["Vietnam Airlines","#0a5a9c"],
+  AXM:["AirAsia","#e2231a"], XAX:["AirAsia X","#e2231a"], MAS:["Malaysia Airlines","#0f2b66"],
+  GIA:["Garuda Indonesia","#0a4d8c"], CEB:["Cebu Pacific","#0a97d5"], PAL:["Philippine Airlines","#00296b"],
+  AIC:["Air India","#c7362b"], IGO:["IndiGo","#001b94"], VTI:["Vistara","#4b286d"],
+  QFA:["Qantas","#e40000"], JST:["Jetstar","#ff5000"], ANZ:["Air New Zealand","#1a1a1a"], VOZ:["Virgin Australia","#cc0033"],
+  ACA:["Air Canada","#d22630"], WJA:["WestJet","#007ac2"], POE:["Porter","#123a63"],
+  AMX:["Aeroméxico","#0b2343"], VOI:["Volaris","#9f2064"], AVA:["Avianca","#e8114b"],
+  LAN:["LATAM","#1b0088"], TAM:["LATAM Brasil","#1b0088"], GLO:["GOL","#ff7020"], AZU:["Azul","#00205b"],
+  ETH:["Ethiopian","#207c40"], KQA:["Kenya Airways","#c82127"], SAA:["South African","#0f2b5b"],
+  RAM:["Royal Air Maroc","#b01e28"], MSR:["EgyptAir","#0f3a93"],
+  FDX:["FedEx","#4d148c"], UPS:["UPS","#6b4c2a"], GTI:["Atlas Air","#072a5e"], GEC:["Lufthansa Cargo","#0a1d3d"],
+  CLX:["Cargolux","#b5121b"], BOX:["AeroLogic","#c00d1e"], ABW:["AirBridgeCargo","#0091d4"],
+  EJA:["NetJets","#1d3c6e"], VJT:["VistaJet","#8c8577"], NJE:["NetJets Europe","#1d3c6e"],
+};
+
+/* registration-prefix fallbacks (private / unmatched) */
+const FALLBACK_COLORS = ["#3d6ea5","#8a5f9e","#4f8a6a","#a5713d","#96455a","#5d7d9e","#7a814a","#9e5d43"];
+
+/* ============ aircraft type → silhouette category ============ */
+const TYPE_RULES = [
+  [/^A38/, "super"],
+  [/^B74/, "jumbo"],
+  [/^(A3[3456]|B7[678]|MD1|DC1|IL9|IL8|A31[04])/, "wide"],
+  [/^(A1[9]|A2[01]|A19N|A20N|A21N|A3[12]|B7[1235]|BCS|E19|E29|MD8|MD9|SU9|C919|B72)/, "narrow"],
+  [/^(AT[4-7]|DH8|SF3|SB2|E12|F50|JS4|D328|SW[34]|B19|BE20|BE9|C441|PC12|C208|TBM|PAY)/, "prop"],
+  [/^(CRJ|E1[34]|E17|E75|F70|F10|RJ1|RJ85|B46)/, "regional"],
+  [/^(GLF|GL[0-9]|CL[36]|LJ|FA[0-9]|F2TH|F900|C2[58]|C5[0-9]|C6[08]|C7[05]|E5[45]|E35|PC24|HDJT|H25|G280|GALX|PRM1|BE40)/, "biz"],
+  [/^(R44|R66|EC[0-9]|H4[07]|H6[0-9]|H1[23456]|S76|S92|B06|B4[024][0-9]?|A10[9]|A13[9]|A16[9]|AS[356]|EH10|UH1|MD5|R22)/, "heli"],
+  [/^(C1[5-8]|C17[27]|C72|C77|C82|P28|PA[234]|SR2|DA[24]|DV20|BE3[36]|M20|AA5|RV[0-9]|EVSS|GLID)/, "ga"],
+];
+function categoryFor(type, wake) {
+  const t = (type || "").toUpperCase();
+  for (const [re, cat] of TYPE_RULES) if (re.test(t)) return cat;
+  if (wake === "A5") return "wide";
+  if (wake === "A7") return "heli";
+  if (wake === "A1") return "ga";
+  if (wake === "A2") return "regional";
+  return t ? "narrow" : "narrow";
+}
+/* relative visual scale of each category in the poster */
+const CAT_SCALE = { super: 1.0, jumbo: 0.97, wide: 0.88, narrow: 0.66, regional: 0.52, biz: 0.44, prop: 0.52, ga: 0.34, heli: 0.38 };
+
+/* ============ silhouette generator ============ */
+/* All silhouettes face right in a 420 × 120 viewBox. */
+function silhouetteSVG(cat, accent, label, pal, widthPx) {
+  const body = pal.body, out = pal.outline, dark = "rgba(15,18,30,0.55)";
+  const W = 420, H = 120, B = 88; /* baseline (fuselage bottom) */
+  let parts = [];
+
+  const fuselage = (x0, x1, hgt, humpFn) => {
+    const T = B - hgt, nose = hgt * 1.7, tail = hgt * 2.6;
+    let d = `M ${x0 + tail} ${T}` +
+            ` L ${x1 - nose} ${T}` +
+            ` C ${x1 - nose * 0.32} ${T} ${x1} ${T + hgt * 0.26} ${x1} ${T + hgt * 0.60}` +
+            ` C ${x1 - nose * 0.22} ${B} ${x1 - nose * 0.85} ${B} ${x1 - nose} ${B}` +
+            ` L ${x0 + tail * 0.92} ${B}` +
+            ` C ${x0 + tail * 0.42} ${B} ${x0 + tail * 0.28} ${T + hgt * 0.52} ${x0} ${T + hgt * 0.34}` +
+            ` C ${x0 + tail * 0.06} ${T + hgt * 0.12} ${x0 + tail * 0.5} ${T} ${x0 + tail} ${T} Z`;
+    parts.push(`<path d="${d}" fill="${body}" stroke="${out}" stroke-width="1.4"/>`);
+    if (humpFn) humpFn(T, hgt);
+    return T;
+  };
+  const fin = (x0, hgt, T, tall) => {
+    const fh = tall * hgt, base = x0 + hgt * 1.9;
+    parts.push(`<path d="M ${base} ${T + 2} L ${x0 + hgt * 0.5} ${T - fh} L ${x0 + hgt * 1.6} ${T - fh} C ${base + hgt * 0.8} ${T - fh * 0.35} ${base + hgt * 1.05} ${T} ${base + hgt * 1.25} ${T + 3} Z" fill="${accent}" stroke="${out}" stroke-width="1"/>`);
+  };
+  const hstab = (x0, hgt, T) => {
+    parts.push(`<path d="M ${x0 + hgt * 1.1} ${T + hgt * 0.28} L ${x0 - hgt * 0.55} ${T + hgt * 0.05} L ${x0 - hgt * 0.15} ${T + hgt * 0.42} L ${x0 + hgt * 2.2} ${T + hgt * 0.55} Z" fill="${body}" stroke="${out}" stroke-width="1"/>`);
+  };
+  const wing = (rootX, len, drop) => {
+    /* swept blade hanging below the fuselage, tip trailing left */
+    parts.push(`<path d="M ${rootX + len * 0.16} ${B - 3} L ${rootX - len * 0.60} ${B + drop} L ${rootX - len * 0.78} ${B + drop + 2.5} L ${rootX - len * 0.10} ${B - 3} Z" fill="${body}" stroke="${out}" stroke-width="1.2"/>`);
+    /* winglet at the tip */
+    parts.push(`<path d="M ${rootX - len * 0.60} ${B + drop} L ${rootX - len * 0.70} ${B + drop - 7} L ${rootX - len * 0.73} ${B + drop - 5.5} L ${rootX - len * 0.69} ${B + drop + 2} Z" fill="${accent}"/>`);
+  };
+  const engine = (x, y, s) => {
+    parts.push(`<rect x="${x}" y="${y}" width="${26 * s}" height="${13 * s}" rx="${6.5 * s}" fill="${body}" stroke="${out}" stroke-width="1"/>`);
+    parts.push(`<rect x="${x + 26 * s - 4.5 * s}" y="${y + 1.2 * s}" width="${4 * s}" height="${10.6 * s}" rx="${2 * s}" fill="${accent}"/>`);
+  };
+  const cockpit = (x1, hgt, T) => {
+    const nose = hgt * 1.7;
+    parts.push(`<path d="M ${x1 - nose * 0.72} ${T + hgt * 0.16} L ${x1 - nose * 0.34} ${T + hgt * 0.30} L ${x1 - nose * 0.44} ${T + hgt * 0.44} L ${x1 - nose * 0.86} ${T + hgt * 0.34} Z" fill="${dark}"/>`);
+  };
+  const windows = (xa, xb, y) => {
+    parts.push(`<line x1="${xa}" y1="${y}" x2="${xb}" y2="${y}" stroke="${dark}" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.1 6.5"/>`);
+  };
+  const wordmark = (x, y, size) => {
+    if (!label) return;
+    const esc = label.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    parts.push(`<text x="${x}" y="${y}" font-family="Inter, sans-serif" font-weight="600" font-size="${size}" letter-spacing="1.1" fill="${accent}">${esc.toUpperCase()}</text>`);
+  };
+
+  if (cat === "heli") {
+    parts.push(`<line x1="96" y1="30" x2="330" y2="24" stroke="${body}" stroke-width="3.4" stroke-linecap="round"/>`);
+    parts.push(`<rect x="206" y="30" width="7" height="14" fill="${body}"/>`);
+    parts.push(`<path d="M 250 44 C 262 40 268 52 266 62 C 264 76 248 82 232 82 L 196 82 C 180 82 168 74 166 62 C 164 50 176 42 192 42 Z" fill="${body}" stroke="${out}" stroke-width="1.4"/>`);
+    parts.push(`<path d="M 172 56 L 84 46 L 80 54 L 168 66 Z" fill="${body}" stroke="${out}" stroke-width="1"/>`);
+    parts.push(`<path d="M 86 50 L 74 26 L 82 24 L 94 48 Z" fill="${accent}" stroke="${out}" stroke-width="1"/>`);
+    parts.push(`<circle cx="79" cy="37" r="12" fill="none" stroke="${dark}" stroke-width="2"/>`);
+    parts.push(`<path d="M 236 44 L 250 36 L 256 44 Z" fill="${dark}"/>`);
+    parts.push(`<line x1="184" y1="88" x2="252" y2="88" stroke="${body}" stroke-width="3" stroke-linecap="round"/>`);
+    parts.push(`<line x1="200" y1="82" x2="196" y2="88" stroke="${body}" stroke-width="2.4"/>`);
+    parts.push(`<line x1="238" y1="82" x2="242" y2="88" stroke="${body}" stroke-width="2.4"/>`);
+    wordmark(180, 76, 9);
+  } else if (cat === "ga") {
+    const T = fuselage(120, 330, 22);
+    parts.push(`<ellipse cx="332" cy="${B - 11}" rx="3.4" ry="15" fill="${dark}"/>`);
+    fin(120, 22, T, 1.35);
+    hstab(122, 20, T);
+    parts.push(`<line x1="176" y1="${T + 2}" x2="262" y2="${T + 2}" stroke="${body}" stroke-width="5" stroke-linecap="round"/>`);
+    parts.push(`<path d="M ${252} ${T + 7} L ${236} ${T + 3} L ${212} ${T + 3} L ${222} ${T + 7} Z" fill="${dark}"/>`);
+    parts.push(`<line x1="236" y1="${B}" x2="232" y2="${B + 10}" stroke="${body}" stroke-width="2.6"/>`);
+    parts.push(`<line x1="180" y1="${B}" x2="180" y2="${B + 10}" stroke="${body}" stroke-width="2.6"/>`);
+    parts.push(`<circle cx="232" cy="${B + 12}" r="4" fill="${dark}"/>`);
+    parts.push(`<circle cx="180" cy="${B + 12}" r="4" fill="${dark}"/>`);
+    wordmark(150, B - 6, 9);
+  } else if (cat === "prop") {
+    const T = fuselage(60, 380, 30);
+    /* tall fin with T-tail stabiliser on top */
+    fin(60, 30, T, 1.8);
+    parts.push(`<path d="M ${60 + 30 * 0.2} ${T - 30 * 1.8} L ${60 - 30 * 0.7} ${T - 30 * 1.95} L ${60 - 30 * 0.35} ${T - 30 * 1.68} L ${60 + 30 * 1.9} ${T - 30 * 1.6} Z" fill="${body}" stroke="${out}" stroke-width="1"/>`);
+    /* high wing line + twin turboprop nacelles */
+    parts.push(`<line x1="150" y1="${T + 4}" x2="305" y2="${T + 4}" stroke="${body}" stroke-width="6" stroke-linecap="round"/>`);
+    parts.push(`<rect x="238" y="${T - 4}" width="46" height="15" rx="7" fill="${body}" stroke="${out}" stroke-width="1"/>`);
+    parts.push(`<ellipse cx="286" cy="${T + 3}" rx="3" ry="17" fill="${dark}"/>`);
+    parts.push(`<rect x="162" y="${T - 3}" width="42" height="14" rx="7" fill="${body}" stroke="${out}" stroke-width="1"/>`);
+    parts.push(`<ellipse cx="206" cy="${T + 4}" rx="3" ry="16" fill="${dark}"/>`);
+    cockpit(380, 30, T);
+    windows(150, 330, T + 30 * 0.62);
+    wordmark(96, B - 9, 8.5);
+  } else {
+    /* fixed-wing jets */
+    const geom = {
+      super:    { x0: 16, x1: 410, h: 46, tall: 1.55, engines: 2, wingLen: 155, esc: 1.1 },
+      jumbo:    { x0: 18, x1: 408, h: 38, tall: 1.7, engines: 2, wingLen: 150, esc: 1.15 },
+      wide:     { x0: 30, x1: 400, h: 36, tall: 1.65, engines: 1, wingLen: 138, esc: 1.25 },
+      narrow:   { x0: 55, x1: 385, h: 31, tall: 1.6, engines: 1, wingLen: 108, esc: 1.0 },
+      regional: { x0: 80, x1: 360, h: 27, tall: 1.55, engines: 1, wingLen: 86, esc: 0.85, rear: true },
+      biz:      { x0: 95, x1: 350, h: 25, tall: 1.5, engines: 1, wingLen: 74, esc: 0.7, rear: true },
+    }[cat] || { x0: 55, x1: 385, h: 31, tall: 1.6, engines: 1, wingLen: 108, esc: 1.0 };
+
+    const { x0, x1, h, tall, wingLen, esc } = geom;
+    const T = fuselage(x0, x1, h, cat === "jumbo" ? (T0, hg) => {
+      /* 747 upper-deck hump over the front third */
+      parts.push(`<path d="M ${x1 - hg * 7.6} ${T0 + 2} C ${x1 - hg * 7.0} ${T0 - hg * 0.52} ${x1 - hg * 4.4} ${T0 - hg * 0.58} ${x1 - hg * 3.2} ${T0 - hg * 0.30} C ${x1 - hg * 2.5} ${T0 - hg * 0.12} ${x1 - hg * 2.1} ${T0 + 1} ${x1 - hg * 1.9} ${T0 + 2} Z" fill="${body}" stroke="${out}" stroke-width="1.2"/>`);
+    } : null);
+    if (cat === "jumbo") {
+      /* upper-deck window row on the hump */
+      parts.push(`<line x1="${x1 - h * 6.6}" y1="${T - h * 0.16}" x2="${x1 - h * 3.6}" y2="${T - h * 0.16}" stroke="${dark}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="0.1 6"/>`);
+    }
+    if (cat === "super") {
+      /* A380 full-length upper deck: second window row */
+      parts.push(`<line x1="${x0 + h * 2.6}" y1="${T + h * 0.30}" x2="${x1 - h * 2.1}" y2="${T + h * 0.30}" stroke="${dark}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.1 6.2"/>`);
+    }
+
+    fin(x0, h, T, tall);
+    hstab(x0 + 4, h * 0.9, T);
+
+    const rootX = (x0 + x1) / 2 + h * 0.6;
+    const drop = h * 0.85;
+    wing(rootX, wingLen, drop);
+
+    /* engines hang under the wing line */
+    const engAt = (f, s) => {
+      const ex = rootX + wingLen * 0.16 - wingLen * 0.76 * f;
+      const ey = (B - 3) + (drop + 3) * f - 2;
+      engine(ex - 13 * s, ey, s);
+    };
+    if (geom.rear) {
+      /* rear-mounted engine on fuselage */
+      engine(x0 + h * 2.4, T - h * 0.14, esc);
+    } else if (geom.engines === 2) {
+      engAt(0.62, esc);
+      engAt(0.24, esc * 1.08);
+    } else {
+      engAt(0.38, esc);
+    }
+
+    cockpit(x1, h, T);
+    windows(x0 + h * 3.3, x1 - h * 2.4, T + h * 0.66);
+    wordmark(x0 + h * 3.5, T + h * (cat === "super" ? 0.58 : 0.46), Math.max(h * (cat === "super" ? 0.22 : 0.26), 8));
+  }
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="${widthPx}" role="img" aria-label="${(label || cat)} silhouette">${parts.join("")}</svg>`;
+}
+
+/* ================= state ================= */
+const LS = { settings: "skyframe.settings", collection: "skyframe.collection" };
+const state = {
+  lat: 51.4700, lon: -0.4543, radius: 25,
+  paletteKey: "cerulean",
+  locLabel: "",
+  aircraft: [],
+  lastFetch: 0,
+  fetchError: null,
+  timer: null,
+};
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS.settings) || "{}");
+    if (typeof s.lat === "number") state.lat = s.lat;
+    if (typeof s.lon === "number") state.lon = s.lon;
+    if (s.radius) state.radius = s.radius;
+    if (s.paletteKey && PALETTES[s.paletteKey]) state.paletteKey = s.paletteKey;
+    if (typeof s.locLabel === "string") state.locLabel = s.locLabel;
+  } catch (e) {}
+  const q = new URLSearchParams(location.search);
+  if (q.get("lat") && q.get("lon")) { state.lat = +q.get("lat"); state.lon = +q.get("lon"); }
+  if (q.get("radius")) state.radius = +q.get("radius");
+}
+function saveSettings() {
+  localStorage.setItem(LS.settings, JSON.stringify({
+    lat: state.lat, lon: state.lon, radius: state.radius,
+    paletteKey: state.paletteKey, locLabel: state.locLabel,
+  }));
+}
+
+function loadCollection() {
+  try { return JSON.parse(localStorage.getItem(LS.collection) || "{}"); } catch (e) { return {}; }
+}
+function saveCollection(c) { localStorage.setItem(LS.collection, JSON.stringify(c)); }
+
+/* ================= data ================= */
+function airlineFor(p) {
+  const cs = (p.flight || "").trim().toUpperCase();
+  const prefix = cs.slice(0, 3);
+  if (AIRLINES[prefix]) return { name: AIRLINES[prefix][0], color: AIRLINES[prefix][1] };
+  if (p.ownOp) return { name: p.ownOp, color: hashColor(p.ownOp) };
+  const key = p.r || p.hex || "??";
+  return { name: cs || (p.r ? "Private · " + p.r : "Unidentified"), color: hashColor(key) };
+}
+function hashColor(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return FALLBACK_COLORS[h % FALLBACK_COLORS.length];
+}
+function typeName(p) {
+  if (p.desc) return p.desc.replace(/\b([A-Z])([A-Z]+)\b/g, (m, a, b) => a + b.toLowerCase())
+    .replace(/\bA-/g, "A").replace(/\bB-/g, "B").replace(/Kc-/,"KC-");
+  return p.t || "Unknown type";
+}
+function compass(deg) {
+  const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
+}
+function fmtAlt(p) {
+  if (p.alt_baro === "ground") return "on ground";
+  const a = p.alt_baro ?? p.alt_geom;
+  return a == null ? "—" : Math.max(a, 0).toLocaleString() + " ft";
+}
+
+async function fetchPlanes() {
+  const url = `https://api.airplanes.live/v2/point/${state.lat.toFixed(4)}/${state.lon.toFixed(4)}/${state.radius}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const list = (data.ac || [])
+      .filter(p => p.alt_baro !== "ground" && (p.dst != null))
+      .sort((a, b) => a.dst - b.dst);
+    state.aircraft = list;
+    state.lastFetch = Date.now();
+    state.fetchError = null;
+    recordSightings(list);
+  } catch (err) {
+    state.fetchError = err.message || "fetch failed";
+  }
+  renderAll();
+}
+
+function recordSightings(list) {
+  const coll = loadCollection();
+  const now = Date.now();
+  let changed = false;
+  for (const p of list) {
+    const key = (p.r || p.hex || "").trim();
+    if (!key) continue;
+    const al = airlineFor(p);
+    const prev = coll[key];
+    if (!prev) {
+      coll[key] = {
+        reg: p.r || p.hex, type: p.t || "", desc: typeName(p), op: al.name, color: al.color,
+        cat: categoryFor(p.t, p.category), count: 1, first: now, last: now,
+      };
+      changed = true;
+    } else {
+      /* new sighting only if it left the sky for a while */
+      if (now - prev.last > 30 * 60 * 1000) { prev.count++; changed = true; }
+      prev.last = now;
+      changed = true;
+    }
+  }
+  if (changed) saveCollection(coll);
+}
+
+/* ================= rendering ================= */
+const $ = (id) => document.getElementById(id);
+
+function renderAll() {
+  renderStatus();
+  renderFrame();
+  renderSky();
+  renderCollection();
+}
+
+function renderStatus() {
+  const el = $("live");
+  const txt = $("liveText");
+  el.classList.remove("on", "err");
+  if (state.fetchError) {
+    el.classList.add("err");
+    txt.textContent = "offline · " + state.fetchError;
+  } else if (state.lastFetch) {
+    el.classList.add("on");
+    txt.textContent = `live · ${state.aircraft.length} aircraft · ${new Date(state.lastFetch).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}`;
+  } else {
+    txt.textContent = "connecting…";
+  }
+}
+
+function posterCaption() {
+  if (state.locLabel.trim()) return state.locLabel.trim().toUpperCase();
+  const ns = state.lat >= 0 ? "N" : "S", ew = state.lon >= 0 ? "E" : "W";
+  return `${Math.abs(state.lat).toFixed(3)}°${ns} ${Math.abs(state.lon).toFixed(3)}°${ew}`;
+}
+
+function renderFrame() {
+  const pal = PALETTES[state.paletteKey];
+  const art = $("art");
+  art.style.background = pal.bg;
+  art.style.color = pal.ink;
+
+  const date = new Date().toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
+  const shown = state.aircraft.slice(0, 5);
+  const extra = state.aircraft.length - shown.length;
+
+  let html = `<div class="art-head"><div class="art-title">Skyframe</div><div class="art-date">${date}</div></div>`;
+
+  if (!shown.length) {
+    html += `<div class="art-empty">
+      <svg width="54" height="30" viewBox="0 0 54 30" fill="none">
+        <path d="M8 22 C4 22 2 19 2 16.5 C2 13.5 4.5 11.5 7.5 11.7 C8.3 7 12.2 4 17 4 C21 4 24.5 6.2 26 9.6 C27 9.2 28.2 9 29.4 9 C34 9 37.8 12.4 38 16.8 C40.6 17 42.5 19 42.5 21.4" stroke="${pal.ink}" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <div>Quiet sky</div><small>No aircraft within ${state.radius} nm — they’ll be along shortly</small>
+    </div>`;
+  } else {
+    html += `<div class="art-planes">`;
+    const artW = art.clientWidth || 480;
+    const usable = artW * 0.84;
+    for (const p of shown) {
+      const al = airlineFor(p);
+      const cat = categoryFor(p.t, p.category);
+      const w = Math.max(usable * (CAT_SCALE[cat] || 0.6), 110);
+      const label = al.name.length > 26 ? "" : al.name;
+      const capL = `<b>${al.name}</b> · ${typeName(p)}`;
+      const km = (p.dst * 1.852).toFixed(0);
+      const capR = ` — ${fmtAlt(p)} · ${km} km ${compass(p.dir)}${p.r ? " · " + p.r : ""}`;
+      html += `<div class="art-plane">${silhouetteSVG(cat, al.color, label, pal, w)}<div class="art-caption">${capL}${capR}</div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `<div class="art-foot">${posterCaption()} · RECEIVED LIVE VIA ADS-B${extra > 0 ? ` · +${extra} MORE IN RANGE` : ""}</div>`;
+  art.innerHTML = html;
+
+  $("frameNote").textContent = shown.length
+    ? `The ${shown.length} nearest aircraft inside ${state.radius} nm, redrawn every 10 seconds.`
+    : `Watching ${state.radius} nm of sky around ${posterCaption()}.`;
+}
+
+function renderSky() {
+  const pal = PALETTES[state.paletteKey];
+  const paper = $("skyPaper");
+  paper.style.background = pal.bg === "#ece5d2" ? pal.bg : pal.bg;
+
+  const S = 640, C = S / 2, R = S * 0.44;
+  const ink = pal.ink;
+  let g = `<svg viewBox="0 0 ${S} ${S}">`;
+  for (const f of [1 / 3, 2 / 3, 1]) {
+    g += `<circle cx="${C}" cy="${C}" r="${R * f}" fill="none" stroke="${ink}" stroke-opacity="${f === 1 ? 0.4 : 0.18}" stroke-width="1" stroke-dasharray="${f === 1 ? "none" : "2 5"}"/>`;
+    g += `<text x="${C + 6}" y="${C - R * f + 14}" font-family="IBM Plex Mono, monospace" font-size="10" fill="${ink}" fill-opacity="0.45">${Math.round(state.radius * f)} nm</text>`;
+  }
+  for (const [t, dx, dy, anchor] of [["N", 0, -1, "middle"], ["S", 0, 1, "middle"], ["E", 1, 0, "start"], ["W", -1, 0, "end"]]) {
+    g += `<text x="${C + dx * (R + 22)}" y="${C + dy * (R + 22) + 4}" text-anchor="${anchor}" font-family="Fraunces, serif" font-size="14" fill="${ink}" fill-opacity="0.7">${t}</text>`;
+  }
+  g += `<circle cx="${C}" cy="${C}" r="4" fill="${ink}"/><circle cx="${C}" cy="${C}" r="9" fill="none" stroke="${ink}" stroke-opacity="0.5"/>`;
+
+  const planeGlyph = "M 0 -9 C 1.2 -9 2 -7.5 2 -5.5 L 2 -2.2 L 10 2.6 L 10 5 L 2 2.6 L 2 6.4 L 4.6 8.6 L 4.6 10.4 L 0 9.2 L -4.6 10.4 L -4.6 8.6 L -2 6.4 L -2 2.6 L -10 5 L -10 2.6 L -2 -2.2 L -2 -5.5 C -2 -7.5 -1.2 -9 0 -9 Z";
+  for (const p of state.aircraft) {
+    const r = Math.min(p.dst / state.radius, 1) * R;
+    const a = (p.dir - 90) * Math.PI / 180;
+    const x = C + r * Math.cos(a), y = C + r * Math.sin(a);
+    const rot = p.track ?? p.true_heading ?? 0;
+    const cs = (p.flight || p.r || "").trim();
+    g += `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">` +
+         `<g transform="rotate(${rot.toFixed(0)})"><path d="${planeGlyph}" fill="${ink}" fill-opacity="0.92" transform="scale(1.15)"/></g>` +
+         `<text x="0" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="${ink}" fill-opacity="0.75">${cs}</text></g>`;
+  }
+  g += `</svg>`;
+  paper.innerHTML = g;
+
+  $("skySub").textContent = state.aircraft.length
+    ? `${state.aircraft.length} aircraft inside ${state.radius} nm of ${posterCaption()}`
+    : `No traffic inside ${state.radius} nm right now`;
+
+  const rows = state.aircraft.slice(0, 14).map(p => {
+    const al = airlineFor(p);
+    const km = (p.dst * 1.852).toFixed(0);
+    return `<tr>
+      <td class="mono">${(p.flight || "—").trim()}</td>
+      <td><span class="swatch" style="background:${al.color}"></span><span class="op">${al.name}</span><span class="ac-type">${typeName(p)}${p.r ? " · " + p.r : ""}</span></td>
+      <td class="mono">${fmtAlt(p)}</td>
+      <td class="mono">${km} km ${compass(p.dir)}</td>
+    </tr>`;
+  }).join("");
+  $("flightRows").innerHTML = rows || `<tr><td colspan="4" class="mono" style="padding:20px 8px;color:var(--ink-faint)">quiet sky…</td></tr>`;
+}
+
+function renderCollection() {
+  const pal = PALETTES[state.paletteKey];
+  const coll = Object.values(loadCollection()).sort((a, b) => b.last - a.last);
+  $("collSub").textContent = coll.length
+    ? `${coll.length} aircraft collected · ${coll.reduce((s, c) => s + c.count, 0)} total sightings`
+    : "Every aircraft that has crossed your sky.";
+  $("collEmpty").style.display = coll.length ? "none" : "block";
+  $("collGrid").innerHTML = coll.map(c => {
+    const d = new Date(c.last);
+    return `<div class="coll-card">
+      ${silhouetteSVG(c.cat || "narrow", c.color, "", { body: "#ece8da", outline: "rgba(0,0,0,0.3)" }, 200)}
+      <div class="reg">${c.reg}</div>
+      <div class="op">${c.op}</div>
+      <div class="meta"><span>${c.desc || c.type}</span><span>×${c.count} · ${d.toLocaleDateString([], { day: "numeric", month: "short" })}</span></div>
+    </div>`;
+  }).join("");
+}
+
+/* ================= UI wiring ================= */
+function initUI() {
+  document.querySelectorAll("nav.tabs button").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("nav.tabs button").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      $("view-" + b.dataset.view).classList.add("active");
+      renderAll();
+    });
+  });
+
+  const palEl = $("palette");
+  for (const [key, p] of Object.entries(PALETTES)) {
+    const b = document.createElement("button");
+    b.style.background = p.bg;
+    b.title = p.name;
+    b.dataset.key = key;
+    if (key === state.paletteKey) b.classList.add("active");
+    b.addEventListener("click", () => {
+      state.paletteKey = key;
+      palEl.querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
+      saveSettings(); renderAll();
+    });
+    palEl.appendChild(b);
+  }
+
+  const latlon = $("latlon");
+  latlon.value = `${state.lat.toFixed(4)}, ${state.lon.toFixed(4)}`;
+  latlon.addEventListener("change", () => {
+    const m = latlon.value.match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
+    if (m) {
+      state.lat = Math.max(-85, Math.min(85, +m[1]));
+      state.lon = Math.max(-180, Math.min(180, +m[2]));
+      latlon.value = `${state.lat.toFixed(4)}, ${state.lon.toFixed(4)}`;
+      saveSettings(); fetchPlanes();
+    }
+  });
+
+  const radius = $("radius");
+  radius.value = String(state.radius);
+  radius.addEventListener("change", () => { state.radius = +radius.value; saveSettings(); fetchPlanes(); });
+
+  const locLabel = $("locLabel");
+  locLabel.value = state.locLabel;
+  locLabel.addEventListener("change", () => { state.locLabel = locLabel.value; saveSettings(); renderAll(); });
+
+  $("geoBtn").addEventListener("click", () => {
+    if (!navigator.geolocation) return;
+    $("geoBtn").textContent = "◎ locating…";
+    navigator.geolocation.getCurrentPosition(pos => {
+      state.lat = pos.coords.latitude; state.lon = pos.coords.longitude;
+      latlon.value = `${state.lat.toFixed(4)}, ${state.lon.toFixed(4)}`;
+      $("geoBtn").textContent = "◎ Use my location";
+      saveSettings(); fetchPlanes(); reverseGeocode();
+    }, () => { $("geoBtn").textContent = "◎ Use my location"; }, { timeout: 8000 });
+  });
+
+  $("collClear").addEventListener("click", () => {
+    if (confirm("Clear your entire collection? This can’t be undone.")) {
+      localStorage.removeItem(LS.collection);
+      renderCollection();
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { clearInterval(state.timer); state.timer = null; }
+    else startPolling();
+  });
+}
+
+async function reverseGeocode() {
+  if (state.locLabel.trim()) return; /* user's own caption wins */
+  try {
+    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${state.lat}&longitude=${state.lon}&localityLanguage=en`);
+    if (!res.ok) return;
+    const d = await res.json();
+    const place = [d.city || d.locality, d.principalSubdivision || d.countryName].filter(Boolean).join(", ");
+    if (place) {
+      state.locLabel = "received over " + place;
+      $("locLabel").value = state.locLabel;
+      saveSettings(); renderAll();
+    }
+  } catch (e) {}
+}
+
+function startPolling() {
+  if (state.timer) clearInterval(state.timer);
+  fetchPlanes();
+  state.timer = setInterval(fetchPlanes, 10000);
+}
+
+/* ================= boot ================= */
+loadSettings();
+initUI();
+startPolling();
+/* try geolocation quietly on first ever visit */
+if (!localStorage.getItem(LS.settings) && navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    state.lat = pos.coords.latitude; state.lon = pos.coords.longitude;
+    $("latlon").value = `${state.lat.toFixed(4)}, ${state.lon.toFixed(4)}`;
+    saveSettings(); fetchPlanes(); reverseGeocode();
+  }, () => {}, { timeout: 6000 });
+} else {
+  reverseGeocode();
+}
+window.addEventListener("resize", () => renderFrame());
+/* console hook for tinkering: __skyframe.state, __skyframe.renderAll() */
+window.__skyframe = { state, renderAll, silhouetteSVG };
+</script>
+</body>
+</html>
